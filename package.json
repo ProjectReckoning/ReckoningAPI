@@ -6,7 +6,8 @@
     "test": "jest --coverage",
     "test:watch": "jest --watch",
     "start": "node index.js",
-    "dev": "nodemon index.js"
+    "dev": "nodemon index.js",
+    "prepare": "husky install"
   },
   "author": "",
   "license": "ISC",
@@ -27,7 +28,15 @@
     "winston": "^3.17.0"
   },
   "devDependencies": {
+    "husky": "^9.1.7",
+    "lint-staged": "^16.1.0",
     "nodemon": "^3.1.10",
     "sequelize-cli": "^6.6.3"
+  },
+  "lint-staged": {
+    "**/*.{js,ts,jsx,tsx}": [
+      "eslint --fix",
+      "git add"
+    ]
   }
 }
