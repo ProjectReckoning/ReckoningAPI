@@ -28,7 +28,7 @@ module.exports.permit = (...allow) => {
     if (isAllowed(req.user.role)) {
       next();
     } else {
-      return res.rest.unauthorized("Role tidak sesuai");
+      return wrapper.response(res, 'fail', wrapper.error(new UnauthorizedError('Role tidak sesuai')));
     }
   };
 };
