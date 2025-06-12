@@ -3,7 +3,7 @@ const config = require('../config');
 const wrapper = require('../helpers/utils/wrapper');
 const { UnauthorizedError } = require('../helpers/error');
 
-module.exports = (req, res, next) => {
+module.exports.authenticateToken = (req, res, next) => {
   try {
     const token = req.headers.authorization.split(' ')[1];
     req.userData = jwt.verify(token, config.get('/authentication'));
@@ -21,7 +21,7 @@ module.exports = (req, res, next) => {
   }
 }
 
-const permit = (...allow) => {
+module.exports.permit = (...allow) => {
   const isAllowed = (status) => allow.indexOf(status) > -1;
 
   return (req, res, next) => {
