@@ -30,14 +30,14 @@ module.exports = (sequelize, DataTypes) => {
     }
   }
   Transaction.init({
+    pocket_id: DataTypes.INTEGER,
+    initiator_user_id: DataTypes.INTEGER,
     type: DataTypes.STRING,
     amount: DataTypes.DECIMAL,
+    purpose: DataTypes.STRING,
     status: DataTypes.STRING,
     description: DataTypes.STRING,
-    mock_core_banking_reference: DataTypes.STRING,
     is_business_expense: DataTypes.BOOLEAN,
-    pocket_id: DataTypes.STRING,
-    initiator_user_id: DataTypes.STRING
   }, {
     sequelize,
     modelName: 'Transaction',

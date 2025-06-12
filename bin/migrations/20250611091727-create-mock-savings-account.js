@@ -2,24 +2,24 @@
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
   async up(queryInterface, Sequelize) {
-    await queryInterface.createTable('Businesses', {
+    await queryInterface.createTable('MockSavingsAccounts', {
       id: {
         allowNull: false,
         autoIncrement: true,
         primaryKey: true,
         type: Sequelize.INTEGER
       },
-      name: {
-        type: Sequelize.STRING
+      balance: {
+        type: Sequelize.DECIMAL
       },
-      description: {
-        type: Sequelize.STRING
+      earmarked_balance: {
+        type: Sequelize.DECIMAL
       },
-      status: {
-        type: Sequelize.STRING
-      },
-      created_by_user_id: {
+      user_id: {
         type: Sequelize.INTEGER
+      },
+      account_number: {
+        type: Sequelize.STRING
       },
       createdAt: {
         allowNull: false,
@@ -32,6 +32,6 @@ module.exports = {
     });
   },
   async down(queryInterface, Sequelize) {
-    await queryInterface.dropTable('Businesses');
+    await queryInterface.dropTable('MockSavingsAccounts');
   }
 };

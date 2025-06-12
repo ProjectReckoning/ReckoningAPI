@@ -9,11 +9,20 @@ module.exports = {
         primaryKey: true,
         type: Sequelize.INTEGER
       },
+      pocket_id: {
+        type: Sequelize.INTEGER
+      },
+      initiator_user_id: {
+        type: Sequelize.INTEGER
+      },
       type: {
         type: Sequelize.STRING
       },
       amount: {
         type: Sequelize.DECIMAL
+      },
+      purpose: {
+        type: Sequelize.STRING
       },
       status: {
         type: Sequelize.STRING
@@ -21,17 +30,8 @@ module.exports = {
       description: {
         type: Sequelize.STRING
       },
-      mock_core_banking_reference: {
-        type: Sequelize.STRING
-      },
       is_business_expense: {
         type: Sequelize.BOOLEAN
-      },
-      pocket_id: {
-        type: Sequelize.INTEGER
-      },
-      initiator_user_id: {
-        type: Sequelize.INTEGER
       },
       createdAt: {
         allowNull: false,

@@ -12,9 +12,6 @@ module.exports = {
       status: {
         type: Sequelize.STRING
       },
-      comment: {
-        type: Sequelize.STRING
-      },
       transaction_id: {
         type: Sequelize.INTEGER
       },

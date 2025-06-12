@@ -16,12 +16,6 @@ module.exports = (sequelize, DataTypes) => {
         as: 'owner'
       });
 
-      // Pocket belongs to Business (Many-to-One)
-      Pocket.belongsTo(models.Business, {
-        foreignKey: 'business_id',
-        as: 'business'
-      });
-
       // Pocket memiliki banyak User sebagai member (Many-to-Many through PocketMember)
       Pocket.belongsToMany(models.User, {
         through: models.PocketMember,
@@ -37,16 +31,11 @@ module.exports = (sequelize, DataTypes) => {
       });
 
       // Pocket has many PaymentPlanners (One-to-Many)
-      Pocket.hasMany(models.PaymentPlanner, {
+      Pocket.hasMany(models.AutoBudgeting, {
         foreignKey: 'pocket_id',
-        as: 'paymentPlanners'
+        as: 'autoBudgetings'
       });
 
-      // Pocket has many BusinessSplitRules (One-to-Many)
-      Pocket.hasMany(models.BusinessSplitRule, {
-        foreignKey: 'pocket_id',
-        as: 'businessSplitRules'
-      });
     }
   }
   Pocket.init({
@@ -56,8 +45,10 @@ module.exports = (sequelize, DataTypes) => {
     current_balance: DataTypes.DECIMAL,
     deadline: DataTypes.DATE,
     status: DataTypes.STRING,
-    owner_user_id: DataTypes.STRING,
-    business_id: DataTypes.STRING
+    owner_user_id: DataTypes.INTEGER,
+    icon_name: DataTypes.STRING,
+    color_hex: DataTypes.STRING,
+    account_number: DataTypes.STRING,
   }, {
     sequelize,
     modelName: 'Pocket',

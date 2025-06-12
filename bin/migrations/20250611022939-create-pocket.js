@@ -30,8 +30,14 @@ module.exports = {
       owner_user_id: {
         type: Sequelize.INTEGER
       },
-      business_id: {
-        type: Sequelize.INTEGER
+      icon_name: {
+        type: Sequelize.STRING
+      },
+      color_hex: {
+        type: Sequelize.STRING
+      },
+      account_number: {
+        type: Sequelize.STRING
       },
       createdAt: {
         allowNull: false,

@@ -3,34 +3,38 @@ const {
   Model
 } = require('sequelize');
 module.exports = (sequelize, DataTypes) => {
-  class PocketMember extends Model {
+  class AutoBudgeting extends Model {
     /**
      * Helper method for defining associations.
      * This method is not a part of Sequelize lifecycle.
      * The `models/index` file will call this method automatically.
      */
     static associate(models) {
-      PocketMember.belongsTo(models.User, {
+      AutoBudgeting.belongsTo(models.User,{
         foreignKey: 'user_id',
         as: 'user'
-      });
+      })
 
-      PocketMember.belongsTo(models.Pocket, {
+      AutoBudgeting.belongsTo(models.Pocket,{
         foreignKey: 'pocket_id',
         as: 'pocket'
-      });
+      })
     }
   }
-  PocketMember.init({
+  AutoBudgeting.init({
     user_id: DataTypes.INTEGER,
     pocket_id: DataTypes.INTEGER,
-    role: DataTypes.STRING,
-    contribution_amount: DataTypes.DECIMAL,
-    joined_at: DataTypes.DATE,
-    is_active: DataTypes.BOOLEAN
+    recurring_amount: DataTypes.INTEGER,
+    treshold_amount: DataTypes.INTEGER,
+    status: DataTypes.STRING,
+    is_active: DataTypes.BOOLEAN,
+    schedule_type: DataTypes.STRING,
+    schedule_value: DataTypes.INTEGER,
+    next_run_date: DataTypes.DATE,
+    last_triggered_at: DataTypes.DATE
   }, {
     sequelize,
-    modelName: 'PocketMember',
+    modelName: 'AutoBudgeting',
   });
-  return PocketMember;
+  return AutoBudgeting;
 };

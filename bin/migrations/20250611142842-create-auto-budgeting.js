@@ -2,7 +2,7 @@
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
   async up(queryInterface, Sequelize) {
-    await queryInterface.createTable('BusinessMembers', {
+    await queryInterface.createTable('AutoBudgetings', {
       id: {
         allowNull: false,
         autoIncrement: true,
@@ -12,17 +12,32 @@ module.exports = {
       user_id: {
         type: Sequelize.INTEGER
       },
-      business_id: {
+      pocket_id: {
         type: Sequelize.INTEGER
       },
-      role: {
-        type: Sequelize.STRING
+      recurring_amount: {
+        type: Sequelize.INTEGER
       },
-      joined_at: {
-        type: Sequelize.DATE
+      treshold_amount: {
+        type: Sequelize.INTEGER
+      },
+      status: {
+        type: Sequelize.STRING
       },
       is_active: {
         type: Sequelize.BOOLEAN
+      },
+      schedule_type: {
+        type: Sequelize.STRING
+      },
+      schedule_value: {
+        type: Sequelize.INTEGER
+      },
+      next_run_date: {
+        type: Sequelize.DATE
+      },
+      last_triggered_at: {
+        type: Sequelize.DATE
       },
       createdAt: {
         allowNull: false,
@@ -35,6 +50,6 @@ module.exports = {
     });
   },
   async down(queryInterface, Sequelize) {
-    await queryInterface.dropTable('BusinessMembers');
+    await queryInterface.dropTable('AutoBudgetings');
   }
 };

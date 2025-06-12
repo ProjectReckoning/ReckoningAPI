@@ -3,27 +3,27 @@ const {
   Model
 } = require('sequelize');
 module.exports = (sequelize, DataTypes) => {
-  class Notification extends Model {
+  class MockSavingsAccount extends Model {
     /**
      * Helper method for defining associations.
      * This method is not a part of Sequelize lifecycle.
      * The `models/index` file will call this method automatically.
      */
     static associate(models) {
-      Notification.belongsTo(models.User,{
+      MockSavingsAccount.belongsTo(models.User,{
         foreignKey: 'user_id',
         as: 'user'
       })
     }
   }
-  Notification.init({
-    type: DataTypes.STRING,
-    message: DataTypes.STRING,
-    is_read: DataTypes.BOOLEAN,
-    user_id: DataTypes.INTEGER
+  MockSavingsAccount.init({
+    balance: DataTypes.DECIMAL,
+    earmarked_balance: DataTypes.DECIMAL,
+    user_id: DataTypes.INTEGER,
+    account_number: DataTypes.STRING,
   }, {
     sequelize,
-    modelName: 'Notification',
+    modelName: 'MockSavingsAccount',
   });
-  return Notification;
+  return MockSavingsAccount;
 };

@@ -2,36 +2,24 @@
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
   async up(queryInterface, Sequelize) {
-    await queryInterface.createTable('PaymentPlanners', {
+    await queryInterface.createTable('Friendships', {
       id: {
         allowNull: false,
         autoIncrement: true,
         primaryKey: true,
         type: Sequelize.INTEGER
       },
-      threshold_amount: {
-        type: Sequelize.DECIMAL
-      },
-      top_up_amount: {
-        type: Sequelize.DECIMAL
-      },
-      frequency: {
-        type: Sequelize.STRING
-      },
-      is_active: {
-        type: Sequelize.BOOLEAN
-      },
-      last_triggered_at: {
-        type: Sequelize.DATE
-      },
       status: {
         type: Sequelize.STRING
       },
-      pocket_id: {
+      user_id_1: {
         type: Sequelize.INTEGER
       },
-      user_id: {
+      user_id_2: {
         type: Sequelize.INTEGER
+      },
+      accepted_at: {
+        type: Sequelize.DATE
       },
       createdAt: {
         allowNull: false,
@@ -44,6 +32,6 @@ module.exports = {
     });
   },
   async down(queryInterface, Sequelize) {
-    await queryInterface.dropTable('PaymentPlanners');
+    await queryInterface.dropTable('Friendships');
   }
 };
