@@ -1,0 +1,4 @@
+sequelize model:generate --name MockSavingsAccount --attributes balance:decimal,earmarked_balance:decimal,user_id:integer
+sequelize model:generate --name AutoBudgeting --attributes recurring_amount:decimal,schedule_type:string,schedule_value:integer,next_run_date:timestamp,last_run_date:timestamp,status:string,is_active:boolean
+sequelize model:generate --name Friendship --attributes status:string,user_id_1:integer,user_id_2:integer,accepted_at:date
+sequelize model:generate --name AutoBudgeting --attributes user_id:integer,pocket_id:integer,recurring_amount:integer,treshold_amount:integer,status:string,is_active:boolean,schedule_type:string,schedule_value:integer,next_run_date:date,last_triggered_at:date
