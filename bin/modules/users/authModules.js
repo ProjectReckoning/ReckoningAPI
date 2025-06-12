@@ -3,6 +3,7 @@ const { InternalServerError, ConflictError, NotFoundError, UnauthorizedError } =
 const bcrypt = require('bcrypt');
 const config = require('../../config');
 const SALT_ROUNDS = process.env.SALT_ROUNDS;
+const { User } = require('../../models');
 
 const generateToken = async (data) => {
   const token = jwt.sign(data, config.get('/authentication'), {
@@ -84,6 +85,31 @@ module.exports.loginUser = async (loginData) => {
 
     return token;
 
+  } catch (error) {
+    logger.error(error);
+    if (
+      error instanceof NotFoundError ||
+      error instanceof UnauthorizedError
+    ) {
+      throw error;
+    }
+    throw new InternalServerError(error.message);
+  }
+}
+
+module.exports.userProfile = async (userData) => {
+  try {
+    const user = await User.findOne({
+      where: {
+        phone_number: userData.phone_number
+      }
+    });
+
+    if (!user) {
+      throw new NotFoundError('User with that phone number not found');
+    }
+
+    return user;
   } catch (error) {
     logger.error(error);
     if (

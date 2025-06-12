@@ -37,3 +37,20 @@ module.exports.login =  async (req, res) => {
       wrapper.response(res, 'fail', wrapper.error(err), `Error while user logged in. Error: ${err}`, 401);
     });
 }
+
+module.exports.userProfile = async (req, res) => {
+  const userData = req.userData;
+
+  authModules.userProfile(userData)
+    .then(resp => {
+      logger.info('User data has been fetched');
+      const result = {
+        name: resp.name
+      }
+      wrapper.response(res, 'success', wrapper.data(result), 'User data has been fetched', 201);
+    })
+    .catch(err => {
+      logger.error('Error while fetching user data', err);
+      wrapper.response(res, 'fail', wrapper.error(err), `Error while fetching user data. Error: ${err}`, 401);
+    });
+}
