@@ -25,7 +25,7 @@ module.exports.permit = (...allow) => {
   const isAllowed = (status) => allow.indexOf(status) > -1;
 
   return (req, res, next) => {
-    if (isAllowed(req.user.role)) {
+    if (isAllowed(req.userData.role)) {
       next();
     } else {
       return wrapper.response(res, 'fail', wrapper.error(new UnauthorizedError('Role tidak sesuai')));
