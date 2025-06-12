@@ -39,3 +39,71 @@ module.exports.createPocket = (req, res) => {
       );
     });
 };
+
+module.exports.getUserPocket = (req,res)=>{
+  pocketModules.getUserPockets(req.user.id)
+    .then(resp => {
+      const pocketMap = new Map();
+      resp.forEach(item =>{
+        if(pocketMap.has(item.name)){
+          pocketMap.set(item.name, {
+            pocket_id: item.pocket_id,
+            name: item.name,
+            type: item.type,
+            target_nominal: item.target_nominal,
+            current_balance: item.current_balance,
+            deadline: item.deadline ? new Date(item.deadline) : null,
+            status: item.status,
+            icon_name: item.icon_name,
+            color_hex: item.color_hex,
+            account_number: item.account_number
+          });
+        }
+      });
+      const result = Array.from(pocketMap.values());
+      logger.info("User pockets fetched successfully");
+      wrapper.response(res, "success", wrapper.data(result),"User pockets fetched successfully",200);
+    })
+    .catch(err => {
+      logger.error("Error fetching user pockets", err);
+      wrapper.response(res, "fail", wrapper.error(err), `Error fetching user pockets. Error: ${err}`,400);
+    })
+}
+
+module.exports.getPocketDetail = (req,res) => {
+  const { pocketId } = req.params;
+
+  pocketModules
+    .detailPocket({ pocket_id: pocketId, owner_user_id: req.user.id })
+    .then((resp) => {
+      if (resp.length === 0) {
+        return wrapper.response(
+          res,
+          "fail",
+          null,
+          "Pocket not found or you do not have access to it",
+          404
+        );
+      }
+      logger.info("Pocket detail fetched successfully");
+      return wrapper.response(
+        res,
+        "success",
+        wrapper.data(resp[0]),
+        "Pocket detail fetched successfully",
+        200
+      );
+    })
+    .catch((err) => {
+      logger.error("Error fetching pocket detail", err);
+      return wrapper.response(
+        res,
+        "fail",
+        wrapper.error(err),
+        `Error fetching pocket detail. Error: ${err}`,
+        400
+      );
+    });
+}
+
+    

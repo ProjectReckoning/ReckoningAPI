@@ -5,6 +5,7 @@ const {
 } = require("../helpers/errors");
 const { Pocket } = require("../../models");
 const logger = require("../../helpers/utils/logger");
+const { where } = require("sequelize");
 
 module.exports.createPocket = async (pocketData) => {
   try {
@@ -25,3 +26,49 @@ module.exports.createPocket = async (pocketData) => {
     throw new InternalServerError(error.message);
   }
 };
+
+module.exports.detailPocket = async (attr) => {
+  try {
+    const data = await Pocket.findAll({
+      where: attr,
+      attributes: [
+        "pocket_id",
+        "name",
+        "type",
+        "target_nominal",
+        "current_balance",
+        "deadline",
+        "status",
+        "icon_name",
+        "color_hex",
+        "account_number",
+      ],
+    });
+
+    if (!data || data.length === 0) {
+      throw new NotFoundError("Pocket not found");
+    }
+
+    return data;
+  } catch (error) {
+    throw new InternalServerError(error.message);
+  }
+}
+
+module.exports.getUserPockets =  async (userId) => {
+  try{
+    const data = await Pocket.findAll({
+      where: {
+        owner_user_id: userId
+      }
+    });
+
+    if (!data || data.length === 0) {
+      throw new NotFoundError("No pockets found for this user");
+    }
+
+    return data;
+  }catch (error) {
+    throw new InternalServerError(error.message);
+  }
+}
