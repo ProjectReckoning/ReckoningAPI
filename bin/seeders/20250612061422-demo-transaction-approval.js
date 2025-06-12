@@ -4,32 +4,36 @@ module.exports = {
   async up(queryInterface, Sequelize) {
     await queryInterface.bulkInsert('TransactionApprovals', [
       {
-        id: 'approval-001',
-        transaction_id: 'trans-004',
-        approver_user_id: 'user-002',
+        id: '1',
+        transaction_id: '4',
+        approver_user_id: '2',
         status: 'approved',
-        timestamp: new Date('2024-02-16')
+        createdAt: new Date('2024-02-16'),
+        updatedAt: new Date('2024-02-16')
       },
       {
-        id: 'approval-002',
-        transaction_id: 'trans-004',
-        approver_user_id: 'user-003',
+        id: '2',
+        transaction_id: '4',
+        approver_user_id: '3',
         status: 'pending',
-        timestamp: new Date('2024-02-15')
+        createdAt: new Date('2024-02-15'),
+        updatedAt: new Date('2024-02-15')
       },
       {
-        id: 'approval-003',
-        transaction_id: 'trans-013',
-        approver_user_id: 'user-001',
+        id: '3',
+        transaction_id: '13',
+        approver_user_id: '1',
         status: 'approved',
-        timestamp: new Date('2024-03-02')
+        createdAt: new Date('2024-03-02'),
+        updatedAt: new Date('2024-03-02')
       },
       {
-        id: 'approval-004',
-        transaction_id: 'trans-013',
-        approver_user_id: 'user-003',
+        id: '4',
+        transaction_id: '13',
+        approver_user_id: '3',
         status: 'pending',
-        timestamp: new Date('2024-03-01')
+        createdAt: new Date('2024-03-01'),
+        updatedAt: new Date('2024-03-01')
       }
     ], {});
   },

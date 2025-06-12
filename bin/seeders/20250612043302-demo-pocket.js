@@ -23,7 +23,7 @@ module.exports = {
         {
           id: "2",
           name: "Patungan Laptop Gaming",
-          type: "group_savings",
+          type: "savings",
           target_nominal: 15000000,
           current_balance: 8500000,
           deadline: new Date("2024-08-15"),
@@ -38,7 +38,7 @@ module.exports = {
         {
           id: "3",
           name: "Emergency Fund",
-          type: "emergency",
+          type: "savings",
           target_nominal: 10000000,
           current_balance: 3200000,
           deadline: null,
@@ -54,7 +54,7 @@ module.exports = {
         {
           id: "4",
           name: "Arisan Keluarga",
-          type: "group_payment",
+          type: "savings",
           target_nominal: 2000000,
           current_balance: 1200000,
           deadline: new Date("2024-07-01"),
@@ -69,8 +69,8 @@ module.exports = {
         },
         {
           id: "5",
-          name: "Investasi Saham",
-          type: "investment",
+          name: "Donut Business",
+          type: "business",
           target_nominal: 20000000,
           current_balance: 12500000,
           deadline: new Date("2025-01-01"),

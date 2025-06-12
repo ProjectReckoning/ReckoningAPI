@@ -2,51 +2,56 @@
 
 module.exports = {
   async up(queryInterface, Sequelize) {
-    await queryInterface.bulkInsert('MockSavingAccount', [
+    await queryInterface.bulkInsert('MockSavingsAccounts', [
       {
-        id: 'savings-001',
-        user_id: 'user-001',
+        id: '1',
+        user_id: '1',
         balance: 15750000,
         earmarked_balance: 1500000, // Dana yang sudah dialokasikan ke pockets
-        created_at: new Date('2024-01-01'),
+        createdAt: new Date('2024-01-01'),
+        updatedAt: new Date('2024-01-01'),
         account_number: 'SA001234567890'
       },
       {
-        id: 'savings-002',
-        user_id: 'user-002',
+        id: '2',
+        user_id: '2',
         balance: 8500000,
         earmarked_balance: 3800000,
-        created_at: new Date('2024-01-01'),
+        createdAt: new Date('2024-01-01'),
+        updatedAt: new Date('2024-01-01'),
         account_number: 'SA001234567891'
       },
       {
-        id: 'savings-003',
-        user_id: 'user-003',
+        id: '3',
+        user_id: '3',
         balance: 12200000,
         earmarked_balance: 6200000,
-        created_at: new Date('2024-01-01'),
+        createdAt: new Date('2024-01-01'),
+        updatedAt: new Date('2024-01-01'),
         account_number: 'SA001234567892'
       },
       {
-        id: 'savings-004',
-        user_id: 'user-004',
+        id: '4',
+        user_id: '4',
         balance: 6400000,
         earmarked_balance: 400000,
-        created_at: new Date('2024-01-01'),
+        createdAt: new Date('2024-01-01'),
+        updatedAt: new Date('2024-01-01'),
         account_number: 'SA001234567893'
       },
       {
-        id: 'savings-005',
-        user_id: 'user-005',
+        id: '5',
+        user_id: '5',
         balance: 25000000,
         earmarked_balance: 12900000,
-        created_at: new Date('2024-01-01'),
+        createdAt: new Date('2024-01-01'),
+        updatedAt: new Date('2024-01-01'),
         account_number: 'SA001234567894'
       }
     ], {});
   },
 
   async down(queryInterface, Sequelize) {
-    await queryInterface.bulkDelete('MockSavingAccount', null, {});
+    await queryInterface.bulkDelete('MockSavingsAccounts', null, {});
   }
 };

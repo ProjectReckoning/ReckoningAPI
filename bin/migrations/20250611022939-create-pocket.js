@@ -13,7 +13,9 @@ module.exports = {
         type: Sequelize.STRING
       },
       type: {
-        type: Sequelize.STRING
+        type: Sequelize.ENUM('savings', 'spending', 'investment', 'business'),
+        allowNull: false,
+        defaultValue: 'savings'
       },
       target_nominal: {
         type: Sequelize.DECIMAL
@@ -25,7 +27,9 @@ module.exports = {
         type: Sequelize.DATE
       },
       status: {
-        type: Sequelize.STRING
+        type: Sequelize.ENUM('active', 'inactive', 'archived'),
+        allowNull: false,
+        defaultValue: 'active'
       },
       owner_user_id: {
         type: Sequelize.INTEGER
@@ -51,5 +55,7 @@ module.exports = {
   },
   async down(queryInterface, Sequelize) {
     await queryInterface.dropTable('Pockets');
+    await queryInterface.sequelize.query('DROP TYPE IF EXISTS "enum_Pockets_status";');
+    await queryInterface.sequelize.query('DROP TYPE IF EXISTS "enum_Pockets_type";');
   }
 };

@@ -40,11 +40,11 @@ module.exports = (sequelize, DataTypes) => {
   }
   Pocket.init({
     name: DataTypes.STRING,
-    type: DataTypes.STRING,
+    type: DataTypes.ENUM('savings', 'spending', 'investment', 'business'),
     target_nominal: DataTypes.DECIMAL,
     current_balance: DataTypes.DECIMAL,
     deadline: DataTypes.DATE,
-    status: DataTypes.STRING,
+    status: DataTypes.ENUM('active', 'inactive', 'archived'),
     owner_user_id: DataTypes.INTEGER,
     icon_name: DataTypes.STRING,
     color_hex: DataTypes.STRING,

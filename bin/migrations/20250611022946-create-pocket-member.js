@@ -16,7 +16,9 @@ module.exports = {
         type: Sequelize.INTEGER
       },
       role: {
-        type: Sequelize.STRING
+        type: Sequelize.ENUM('owner', 'member'),
+        allowNull: false,
+        defaultValue: 'member'
       },
       contribution_amount: {
         type: Sequelize.DECIMAL

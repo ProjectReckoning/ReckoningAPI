@@ -2,67 +2,74 @@
 
 module.exports = {
   async up(queryInterface, Sequelize) {
-    await queryInterface.bulkInsert('Friendship', [
+    await queryInterface.bulkInsert('Friendships', [
       {
-        id: 'friend-001',
-        user_id_1: 'user-001',
-        user_id_2: 'user-002',
+        id: '1',
+        user_id_1: '1',
+        user_id_2: '2',
         status: 'accepted',
-        created_at: new Date('2024-01-05'),
-        accepted_at: new Date('2024-01-06')
+        createdAt: new Date('2024-01-05'),
+        accepted_at: new Date('2024-01-06'),
+        updatedAt: new Date('2024-01-06')
       },
       {
-        id: 'friend-002',
-        user_id_1: 'user-001',
-        user_id_2: 'user-003',
+        id: '2',
+        user_id_1: '1',
+        user_id_2: '3',
         status: 'accepted',
-        created_at: new Date('2024-01-10'),
-        accepted_at: new Date('2024-01-11')
+        createdAt: new Date('2024-01-10'),
+        accepted_at: new Date('2024-01-11'),
+        updatedAt: new Date('2024-01-11')
       },
       {
-        id: 'friend-003',
-        user_id_1: 'user-002',
-        user_id_2: 'user-003',
+        id: '3',
+        user_id_1: '2',
+        user_id_2: '3',
         status: 'accepted',
-        created_at: new Date('2024-01-15'),
-        accepted_at: new Date('2024-01-16')
+        createdAt: new Date('2024-01-15'),
+        accepted_at: new Date('2024-01-16'),
+        updatedAt: new Date('2024-01-16')
       },
       {
-        id: 'friend-004',
-        user_id_1: 'user-002',
-        user_id_2: 'user-004',
+        id: '4',
+        user_id_1: '2',
+        user_id_2: '4',
         status: 'accepted',
-        created_at: new Date('2024-01-20'),
-        accepted_at: new Date('2024-01-21')
+        createdAt: new Date('2024-01-20'),
+        accepted_at: new Date('2024-01-21'),
+        updatedAt: new Date('2024-01-21')
       },
       {
-        id: 'friend-005',
-        user_id_1: 'user-004',
-        user_id_2: 'user-005',
+        id: '5',
+        user_id_1: '4',
+        user_id_2: '5',
         status: 'accepted',
-        created_at: new Date('2024-01-25'),
-        accepted_at: new Date('2024-01-26')
+        createdAt: new Date('2024-01-25'),
+        accepted_at: new Date('2024-01-26'),
+        updatedAt: new Date('2024-01-26')
       },
       {
-        id: 'friend-006',
-        user_id_1: 'user-003',
-        user_id_2: 'user-005',
+        id: '6',
+        user_id_1: '3',
+        user_id_2: '5',
         status: 'pending',
-        created_at: new Date('2024-02-01'),
-        accepted_at: null
+        createdAt: new Date('2024-02-01'),
+        accepted_at: null,
+        updatedAt: new Date('2024-02-01')
       },
       {
-        id: 'friend-007',
-        user_id_1: 'user-001',
-        user_id_2: 'user-004',
+        id: '7',
+        user_id_1: '1',
+        user_id_2: '4',
         status: 'rejected',
-        created_at: new Date('2024-01-30'),
-        accepted_at: null
+        createdAt: new Date('2024-01-30'),
+        accepted_at: null,
+        updatedAt: new Date('2024-01-30')
       }
     ], {});
   },
 
   async down(queryInterface, Sequelize) {
-    await queryInterface.bulkDelete('Friendship', null, {});
+    await queryInterface.bulkDelete('Friendships', null, {});
   }
 };

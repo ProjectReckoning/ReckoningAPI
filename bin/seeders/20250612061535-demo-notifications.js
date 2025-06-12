@@ -4,60 +4,67 @@ module.exports = {
   async up(queryInterface, Sequelize) {
     await queryInterface.bulkInsert('Notifications', [
       {
-        id: 'notif-001',
-        user_id: 'user-001',
+        id: '1',
+        user_id: '1',
         type: 'transaction',
         message: 'Transaksi deposit Rp 500.000 ke Tabungan Liburan Bali berhasil',
         is_read: true,
-        created_at: new Date('2024-01-15')
+        createdAt: new Date('2024-01-15'),
+        updatedAt: new Date('2024-01-15')
       },
       {
-        id: 'notif-002',
-        user_id: 'user-002',
+        id: '2',
+        user_id: '2',
         type: 'approval',
         message: 'Transaksi deposit dari Ahmad Rizki memerlukan persetujuan Anda',
         is_read: false,
-        created_at: new Date('2024-02-15')
+        createdAt: new Date('2024-02-15'),
+        updatedAt: new Date('2024-02-15')
       },
       {
-        id: 'notif-003',
-        user_id: 'user-003',
+        id: '3',
+        user_id: '3',
         type: 'approval',
         message: 'Transaksi deposit dari Ahmad Rizki memerlukan persetujuan Anda',
         is_read: false,
-        created_at: new Date('2024-02-15')
+        createdAt: new Date('2024-02-15'),
+        updatedAt: new Date('2024-02-15')
       },
       {
-        id: 'notif-004',
-        user_id: 'user-001',
-        type: 'pocket',
+        id: '4',
+        user_id: '1',
+        type: 'reminder',
         message: 'Selamat! Target 30% tabungan liburan Bali tercapai',
         is_read: true,
-        created_at: new Date('2024-02-01')
+        createdAt: new Date('2024-02-01'),
+        updatedAt: new Date('2024-02-01')
       },
       {
-        id: 'notif-005',
-        user_id: 'user-004',
+        id: '5',
+        user_id: '4',
         type: 'reminder',
         message: 'Jangan lupa setoran arisan bulan ini ya!',
         is_read: false,
-        created_at: new Date('2024-03-01')
+        createdAt: new Date('2024-03-01'),
+        updatedAt: new Date('2024-03-01')
       },
       {
-        id: 'notif-006',
-        user_id: 'user-005',
-        type: 'investment',
+        id: '6',
+        user_id: '5',
+        type: 'alert',
         message: 'Portofolio saham Anda naik 5% bulan ini',
         is_read: false,
-        created_at: new Date('2024-02-28')
+        createdAt: new Date('2024-02-28'),
+        updatedAt: new Date('2024-02-28')
       },
       {
-        id: 'notif-007',
-        user_id: 'user-002',
-        type: 'withdrawal',
+        id: '7',
+        user_id: '2',
+        type: 'approval',
         message: 'Permintaan withdrawal laptop gaming menunggu persetujuan',
         is_read: false,
-        created_at: new Date('2024-03-01')
+        createdAt: new Date('2024-03-01'),
+        updatedAt: new Date('2024-03-01')
       }
     ], {});
   },

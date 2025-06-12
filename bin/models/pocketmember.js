@@ -24,7 +24,7 @@ module.exports = (sequelize, DataTypes) => {
   PocketMember.init({
     user_id: DataTypes.INTEGER,
     pocket_id: DataTypes.INTEGER,
-    role: DataTypes.STRING,
+    role: DataTypes.ENUM('owner', 'member'),
     contribution_amount: DataTypes.DECIMAL,
     joined_at: DataTypes.DATE,
     is_active: DataTypes.BOOLEAN
