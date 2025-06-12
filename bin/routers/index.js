@@ -1,5 +1,6 @@
 const express = require('express');
 const exampleRoutes = require('./exampleRoutes');
+const userRoutes = require('./userRoutes');
 
 const router = express.Router();
 
@@ -9,5 +10,8 @@ router.get('/', (req, res) => {
 
 // Other Routing
 router.use('/example', exampleRoutes);
+
+// User Routing
+router.use('/user', userRoutes);
 
 module.exports = router;
