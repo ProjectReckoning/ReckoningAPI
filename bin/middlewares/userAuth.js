@@ -20,3 +20,15 @@ module.exports = (req, res, next) => {
     return wrapper.response(res, 'fail', wrapper.error(new UnauthorizedError('Auth failed')));
   }
 }
+
+const permit = (...allow) => {
+  const isAllowed = (status) => allow.indexOf(status) > -1;
+
+  return (req, res, next) => {
+    if (isAllowed(req.user.role)) {
+      next();
+    } else {
+      return res.rest.unauthorized("Role tidak sesuai");
+    }
+  };
+};
