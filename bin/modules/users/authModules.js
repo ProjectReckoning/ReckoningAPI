@@ -27,7 +27,11 @@ module.exports.registerUser = async (inputData) => {
 
     inputData.password = await bcrypt.hash(inputData.password, +SALT_ROUNDS);
 
-    const result = await User.create(inputData);
+    const data = await User.create(inputData);
+
+    const result = data.get({ plain: true });
+    delete result.password;
+    
     return result;
   } catch (error) {
     logger.error(error);
@@ -84,7 +88,7 @@ module.exports.loginUser = async (loginData) => {
       role: user.role,
     })
 
-    return token;
+    return { token };
 
   } catch (error) {
     logger.error(error);
