@@ -58,7 +58,7 @@ module.exports.getUserPocket = (req, res) => {
       resp.forEach((item) => {
         if (!pocketMap.has(item.name)) {
           pocketMap.set(item.name, {
-            pocket_id: item.pocket_id,
+            pocket_id: item.id,
             name: item.name,
             type: item.type,
             target_nominal: item.target_nominal,
@@ -95,9 +95,8 @@ module.exports.getUserPocket = (req, res) => {
 
 module.exports.getPocketDetail = (req, res) => {
   const { pocketId } = req.params;
-
   pocketModules
-    .detailPocket({ pocket_id: pocketId, owner_user_id: req.userData.id })
+    .detailPocket({ id: pocketId, owner_user_id: req.userData.id })
     .then((resp) => {
       if (resp.length === 0) {
         return wrapper.response(
@@ -128,3 +127,34 @@ module.exports.getPocketDetail = (req, res) => {
       );
     });
 };
+
+module.exports.updatePocket = (req,res) => {
+  const { pocketId } = req.params;
+  const userId = req.userData.id;
+  const updateData = req.body;
+
+  pocketModules.updatePocket(pocketId, userId, updateData)
+    .then((updatedPocket)=> {
+      logger.info("Pocket updated successfully");
+      return wrapper.response(res,'success',wrapper.data(updatedPocket), 'Pocket updated successfully', 200);
+    })
+    .catch((error)=> {
+      logger.error("Error while updating pocket", error);
+      return wrapper.response(res,'fail',wrapper.error(error),`Error updating pocket. Error: ${error.message} `,400);
+    });
+}
+
+module.exports.deletePocket = (req,res) => {
+  const { pocketId } = req.params;
+  pocketModules
+    .deletePocket(pocketId)
+    .then(resp => {
+      logger.info("Pocket deleted successfully");
+      wrapper.response(res, 'success', wrapper.data(resp),'Product has been deleted', 200);
+    })
+    .catch(err => {
+      logger.error("Error while deleting pocket", err);
+      wrapper.response(res,'fail', wrapper.error(err),`Error while deleting pocket. Error: ${err}`,400)
+    })
+}
+

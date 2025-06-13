@@ -33,6 +33,7 @@ module.exports.detailPocket = async (attr) => {
     const data = await Pocket.findAll({
       where: attr,
       attributes: [
+        "id",
         "name",
         "type",
         "target_nominal",
@@ -98,6 +99,43 @@ module.exports.addMemberToPocket = async ({pocket_id,user_id,role = 'member', co
     });
     return member;
   }catch(error) {
+    throw new InternalServerError(error.message);
+  }
+}
+
+module.exports.updatePocket = async (pocketId, userId, updateData) => {
+  try {
+    const pocket = await Pocket.findOne({
+      where: { id: pocketId, owner_user_id: userId },
+    });
+
+    if (!pocket) {
+      throw new Error("Pocket not found or you don't have access");
+    }
+
+    await pocket.update(updateData);
+
+    return pocket;
+  } catch (error) {
+    throw error;
+  }
+};
+
+module.exports.deletePocket = async (pocketId) => {
+  try {
+    const pocket = await Pocket.findByPk(pocketId);
+    if (!pocket) {
+      throw new NotFoundError("Pocket not found");
+    }
+
+    await PocketMember.destroy({ where: { pocket_id: pocketId } });
+    await pocket.destroy();
+
+    return { message: "Pocket deleted successfully" };
+  }catch (error) {
+    if (error instanceof NotFoundError) {
+      throw error;
+    }
     throw new InternalServerError(error.message);
   }
 }
