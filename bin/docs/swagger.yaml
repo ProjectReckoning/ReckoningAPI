@@ -37,9 +37,9 @@ paths:
                   type: string
                   example: "123456"
       responses:
-        '201':
+        "201":
           description: User registered successfully
-        '400':
+        "400":
           description: Validation error
 
   /user/login:
@@ -64,9 +64,9 @@ paths:
                   type: string
                   example: mySecretPassword
       responses:
-        '200':
+        "200":
           description: User logged in successfully
-        '401':
+        "401":
           description: Invalid credentials
 
   /user/me:
@@ -77,10 +77,168 @@ paths:
       security:
         - bearerAuth: []
       responses:
-        '200':
+        "200":
           description: User profile data
-        '401':
+        "401":
           description: Unauthorized
+
+  /pocket:
+    get:
+      summary: Get all user pockets
+      tags:
+        - Pocket
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: List of user's pockets
+        "401":
+          description: Unauthorized
+
+    post:
+      summary: Create a new pocket
+      tags:
+        - Pocket
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+                - type
+                - target_nominal
+                - status
+              properties:
+                name:
+                  type: string
+                  example: Tabungan Liburan
+                type:
+                  type: enum
+                  enum: [savings, spending, business]
+                  example: savings
+                target_nominal:
+                  type: number
+                  example: 5000000
+                deadline:
+                  type: string
+                  format: date
+                  example: 2025-12-31
+                status:
+                  type: string
+                  example: active
+                icon_name:
+                  type: string
+                  example: flight
+                color_hex:
+                  type: string
+                  example: "#FFAA00"
+      responses:
+        "201":
+          description: Pocket created successfully
+        "400":
+          description: Validation error or failed to create pocket
+        "401":
+          description: Unauthorized
+
+  /pocket/{id}:
+    get:
+      summary: Get pocket detail by ID
+      tags:
+        - Pocket
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+          description: Pocket ID
+      responses:
+        "200":
+          description: Pocket detail data
+        "404":
+          description: Pocket not found or access denied
+        "401":
+          description: Unauthorized
+
+    patch:
+      summary: Update pocket by ID
+      tags:
+        - Pocket
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+          description: Pocket ID
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  example: Tabungan Baru
+                type:
+                  type: enum
+                  enum: [savings, spending, business]
+                  example: savings
+                target_nominal:
+                  type: number
+                  example: 7500000
+                deadline:
+                  type: string
+                  format: date
+                  example: 2026-01-01
+                status:
+                  type: string
+                  example: active
+                icon_name:
+                  type: string
+                  example: gift
+                color_hex:
+                  type: string
+                  example: "#00AAFF"
+      responses:
+        "200":
+          description: Pocket updated successfully
+        "400":
+          description: Validation error or failed to update
+        "401":
+          description: Unauthorized
+        "404":
+          description: Pocket not found or access denied
+
+    delete:
+      summary: Delete pocket by ID
+      tags:
+        - Pocket
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+          description: Pocket ID
+      responses:
+        "200":
+          description: Pocket deleted successfully
+        "401":
+          description: Unauthorized
+        "404":
+          description: Pocket not found
 
 components:
   securitySchemes:
