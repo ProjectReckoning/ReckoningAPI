@@ -2,19 +2,22 @@ const wrapper = require("../../helpers/utils/wrapper");
 const pocketModules = require("../../modules/pocket/pocketModules");
 const logger = require("../../helpers/utils/logger");
 
-module.exports.createPocket = (req, res) => {
+module.exports.createPocket = async (req, res) => {
+  const accountNumber = await pocketModules.generateUniqueAccountNumber();
+  console.log("Generated Account Number:", accountNumber);
   const pocketData = {
     name: req.body.name,
     type: req.body.type,
     target_nominal: parseFloat(req.body.target_nominal),
-    current_balance: parseFloat(req.body.current_balance),
+    current_balance: parseFloat(req.body.target_nominal),
     deadline: req.body.deadline ? new Date(req.body.deadline) : null,
     status: req.body.status,
-    owner_user_id: req.user.id,
+    owner_user_id: req.userData.id,
     icon_name: req.body.icon_name,
     color_hex: req.body.color_hex,
-    account_number: req.body.account_number,
+    account_number: accountNumber,
   };
+  console.log("Pocket Data:", pocketData);
 
   pocketModules
     .createPocket(pocketData)
@@ -40,12 +43,13 @@ module.exports.createPocket = (req, res) => {
     });
 };
 
-module.exports.getUserPocket = (req,res)=>{
-  pocketModules.getUserPockets(req.user.id)
-    .then(resp => {
+module.exports.getUserPocket = (req, res) => {
+  pocketModules
+    .getUserPockets(req.userData.id)
+    .then((resp) => {
       const pocketMap = new Map();
-      resp.forEach(item =>{
-        if(pocketMap.has(item.name)){
+      resp.forEach((item) => {
+        if (!pocketMap.has(item.name)) {
           pocketMap.set(item.name, {
             pocket_id: item.pocket_id,
             name: item.name,
@@ -56,25 +60,37 @@ module.exports.getUserPocket = (req,res)=>{
             status: item.status,
             icon_name: item.icon_name,
             color_hex: item.color_hex,
-            account_number: item.account_number
+            account_number: item.account_number,
           });
         }
       });
       const result = Array.from(pocketMap.values());
       logger.info("User pockets fetched successfully");
-      wrapper.response(res, "success", wrapper.data(result),"User pockets fetched successfully",200);
+      wrapper.response(
+        res,
+        "success",
+        wrapper.data(result),
+        "User pockets fetched successfully",
+        200
+      );
     })
-    .catch(err => {
+    .catch((err) => {
       logger.error("Error fetching user pockets", err);
-      wrapper.response(res, "fail", wrapper.error(err), `Error fetching user pockets. Error: ${err}`,400);
-    })
-}
+      wrapper.response(
+        res,
+        "fail",
+        wrapper.error(err),
+        `Error fetching user pockets. Error: ${err}`,
+        400
+      );
+    });
+};
 
-module.exports.getPocketDetail = (req,res) => {
+module.exports.getPocketDetail = (req, res) => {
   const { pocketId } = req.params;
 
   pocketModules
-    .detailPocket({ pocket_id: pocketId, owner_user_id: req.user.id })
+    .detailPocket({ pocket_id: pocketId, owner_user_id: req.userData.id })
     .then((resp) => {
       if (resp.length === 0) {
         return wrapper.response(
@@ -104,6 +120,4 @@ module.exports.getPocketDetail = (req,res) => {
         400
       );
     });
-}
-
-    
+};

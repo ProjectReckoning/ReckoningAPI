@@ -4,6 +4,7 @@ const bcrypt = require('bcrypt');
 const config = require('../../config');
 const SALT_ROUNDS = process.env.SALT_ROUNDS;
 const { User } = require('../../models');
+const jwt = require('jsonwebtoken');
 
 const generateToken = async (data) => {
   const token = jwt.sign(data, config.get('/authentication'), {

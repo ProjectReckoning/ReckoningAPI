@@ -15,7 +15,8 @@ module.exports.createPocket = async (pocketData) => {
     });
 
     logger.info("Checking if data exist");
-    if (existData) {
+    console.log("Exist Data:", existData);
+    if (existData.length > 0) {
       throw new BadRequestError("Pocket already exists");
     }
 
@@ -32,7 +33,6 @@ module.exports.detailPocket = async (attr) => {
     const data = await Pocket.findAll({
       where: attr,
       attributes: [
-        "pocket_id",
         "name",
         "type",
         "target_nominal",
@@ -44,10 +44,6 @@ module.exports.detailPocket = async (attr) => {
         "account_number",
       ],
     });
-
-    if (!data || data.length === 0) {
-      throw new NotFoundError("Pocket not found");
-    }
 
     return data;
   } catch (error) {
@@ -71,4 +67,21 @@ module.exports.getUserPockets =  async (userId) => {
   }catch (error) {
     throw new InternalServerError(error.message);
   }
+}
+
+module.exports.generateUniqueAccountNumber = async () =>{
+  const randomDigits = () => Math.floor(100000000 + Math.random()* 900000000);
+  let accountNumber;
+  let isUnique = false;
+
+  while(!isUnique){
+    accountNumber = randomDigits();
+    accountNumber = accountNumber.toString();
+    const existingPocket = await Pocket.findOne({ where: {account_number: accountNumber}});
+    if(!existingPocket){
+      isUnique = true;
+    }
+  }
+
+  return accountNumber;
 }
