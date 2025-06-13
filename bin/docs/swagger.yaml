@@ -1,0 +1,90 @@
+openapi: 3.0.0
+info:
+  title: My Express API
+  version: "1.0.0"
+  description: API documentation using YAML
+servers:
+  - url: http://localhost:3000/api/v1
+
+paths:
+  /user/register:
+    post:
+      summary: Register a new user
+      tags:
+        - User
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+                - phone_number
+                - password
+                - pin
+              properties:
+                name:
+                  type: string
+                  example: John Doe
+                phone_number:
+                  type: string
+                  example: 628123456789
+                password:
+                  type: string
+                  example: mySecretPassword
+                pin:
+                  type: string
+                  example: "123456"
+      responses:
+        '201':
+          description: User registered successfully
+        '400':
+          description: Validation error
+
+  /user/login:
+    post:
+      summary: Login user
+      tags:
+        - User
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - phone_number
+                - password
+              properties:
+                phone_number:
+                  type: string
+                  example: 628123456789
+                password:
+                  type: string
+                  example: mySecretPassword
+      responses:
+        '200':
+          description: User logged in successfully
+        '401':
+          description: Invalid credentials
+
+  /user/me:
+    get:
+      summary: Get user profile
+      tags:
+        - User
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: User profile data
+        '401':
+          description: Unauthorized
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
