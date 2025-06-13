@@ -8,12 +8,13 @@ module.exports = (sequelize, DataTypes) => {
      * The `models/index` file will call this method automatically.
      */
     static associate(models) {
+      console.log("Transaction model in User.associate:", models);
       User.hasMany(models.Pocket, {
         foreignKey: "owner_user_id",
         as: "ownedPockets",
       });
 
-      User.hasMany(models.MockSavingAccount, {
+      User.hasMany(models.MockSavingsAccount, {
         foreignKey: "user_id",
         as: "savingAccount",
       });
@@ -46,7 +47,7 @@ module.exports = (sequelize, DataTypes) => {
       });
 
       User.belongsToMany(models.User, {
-        through: models.UserFriend,
+        through: models.Friendship,
         foreignKey: "user_id_1",
         otherKey: "user_id_2",
         as: "friends",
