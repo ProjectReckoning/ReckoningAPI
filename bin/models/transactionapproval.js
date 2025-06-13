@@ -22,6 +22,11 @@ module.exports = (sequelize, DataTypes) => {
     }
   }
   TransactionApproval.init({
+    id: {
+      type: DataTypes.INTEGER,
+      autoIncrement: true,
+      primaryKey: true,
+    },
     status: DataTypes.ENUM('pending', 'approved', 'rejected'),
     transaction_id: DataTypes.STRING,
     approver_user_id: DataTypes.STRING
