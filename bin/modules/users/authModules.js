@@ -1,4 +1,4 @@
-const { logger } = require("sequelize/lib/utils/logger");
+const logger = require('../../helpers/utils/logger');
 const { InternalServerError, ConflictError, NotFoundError, UnauthorizedError } = require("../../helpers/error");
 const bcrypt = require('bcrypt');
 const config = require('../../config');
