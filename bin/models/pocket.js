@@ -39,6 +39,11 @@ module.exports = (sequelize, DataTypes) => {
     }
   }
   Pocket.init({
+    id: {
+      type: DataTypes.INTEGER,
+      autoIncrement: true,
+      primaryKey: true,
+    },
     name: DataTypes.STRING,
     type: DataTypes.ENUM('savings', 'spending', 'investment', 'business'),
     target_nominal: DataTypes.DECIMAL,
