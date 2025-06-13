@@ -32,7 +32,7 @@ module.exports = (sequelize, DataTypes) => {
   Transaction.init({
     pocket_id: DataTypes.INTEGER,
     initiator_user_id: DataTypes.INTEGER,
-    type: DataTypes.STRING,
+    type: DataTypes.ENUM('income', 'expense', 'transfer'),
     amount: DataTypes.DECIMAL,
     purpose: DataTypes.STRING,
     status: DataTypes.STRING,

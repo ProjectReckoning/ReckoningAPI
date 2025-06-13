@@ -17,7 +17,7 @@ module.exports = (sequelize, DataTypes) => {
     }
   }
   Notification.init({
-    type: DataTypes.STRING,
+    type: DataTypes.ENUM('transaction', 'approval', 'reminder', 'alert'),
     message: DataTypes.STRING,
     is_read: DataTypes.BOOLEAN,
     user_id: DataTypes.INTEGER

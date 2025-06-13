@@ -10,7 +10,9 @@ module.exports = {
         type: Sequelize.INTEGER
       },
       status: {
-        type: Sequelize.STRING
+        type: Sequelize.ENUM('pending', 'approved', 'rejected'),
+        allowNull: false,
+        defaultValue: 'pending'
       },
       transaction_id: {
         type: Sequelize.INTEGER
