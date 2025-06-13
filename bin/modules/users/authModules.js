@@ -24,7 +24,7 @@ module.exports.registerUser = async (inputData) => {
       throw new ConflictError('User with that phone number already exist');
     }
 
-    inputData.password = await bcrypt.hash(inputData.password, SALT_ROUNDS);
+    inputData.password = await bcrypt.hash(inputData.password, +SALT_ROUNDS);
 
     const result = await User.create(inputData);
     return result;
