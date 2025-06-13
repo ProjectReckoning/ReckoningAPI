@@ -84,7 +84,7 @@ module.exports.loginUser = async (loginData) => {
       role: user.role,
     })
 
-    return token;
+    return { token };
 
   } catch (error) {
     logger.error(error);
