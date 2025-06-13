@@ -37,9 +37,9 @@ paths:
                   type: string
                   example: "123456"
       responses:
-        '201':
+        "201":
           description: User registered successfully
-        '400':
+        "400":
           description: Validation error
 
   /user/login:
@@ -64,9 +64,9 @@ paths:
                   type: string
                   example: mySecretPassword
       responses:
-        '200':
+        "200":
           description: User logged in successfully
-        '401':
+        "401":
           description: Invalid credentials
 
   /user/me:
@@ -77,31 +77,24 @@ paths:
       security:
         - bearerAuth: []
       responses:
-        '200':
+        "200":
           description: User profile data
-        '401':
+        "401":
           description: Unauthorized
 
   /pocket:
     get:
-      summary: Get all pockets for the authenticated user
+      summary: Get all user pockets
       tags:
         - Pocket
       security:
         - bearerAuth: []
       responses:
-        '200':
-          description: List of user pockets
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/Pocket'
-        '401':
+        "200":
+          description: List of user's pockets
+        "401":
           description: Unauthorized
 
-  /pocket/create:
     post:
       summary: Create a new pocket
       tags:
@@ -118,40 +111,134 @@ paths:
                 - name
                 - type
                 - target_nominal
+                - status
               properties:
                 name:
                   type: string
-                  example: "Holiday Fund"
+                  example: Tabungan Liburan
                 type:
-                  type: string
-                  example: "saving"
+                  type: enum
+                  enum: [savings, spending, business]
+                  example: savings
                 target_nominal:
                   type: number
-                  example: 1000000
+                  example: 5000000
                 deadline:
                   type: string
                   format: date
-                  example: "2025-12-31"
+                  example: 2025-12-31
                 status:
                   type: string
-                  example: "active"
+                  example: active
                 icon_name:
                   type: string
-                  example: "beach"
+                  example: flight
                 color_hex:
                   type: string
-                  example: "#FF5733"
+                  example: "#FFAA00"
       responses:
-        '201':
+        "201":
           description: Pocket created successfully
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Pocket'
-        '400':
-          description: Bad request
-        '401':
+        "400":
+          description: Validation error or failed to create pocket
+        "401":
           description: Unauthorized
+
+  /pocket/{id}:
+    get:
+      summary: Get pocket detail by ID
+      tags:
+        - Pocket
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+          description: Pocket ID
+      responses:
+        "200":
+          description: Pocket detail data
+        "404":
+          description: Pocket not found or access denied
+        "401":
+          description: Unauthorized
+
+    patch:
+      summary: Update pocket by ID
+      tags:
+        - Pocket
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+          description: Pocket ID
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  example: Tabungan Baru
+                type:
+                  type: enum
+                  enum: [savings, spending, business]
+                  example: savings
+                target_nominal:
+                  type: number
+                  example: 7500000
+                deadline:
+                  type: string
+                  format: date
+                  example: 2026-01-01
+                status:
+                  type: string
+                  example: active
+                icon_name:
+                  type: string
+                  example: gift
+                color_hex:
+                  type: string
+                  example: "#00AAFF"
+      responses:
+        "200":
+          description: Pocket updated successfully
+        "400":
+          description: Validation error or failed to update
+        "401":
+          description: Unauthorized
+        "404":
+          description: Pocket not found or access denied
+
+    delete:
+      summary: Delete pocket by ID
+      tags:
+        - Pocket
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+          description: Pocket ID
+      responses:
+        "200":
+          description: Pocket deleted successfully
+        "401":
+          description: Unauthorized
+        "404":
+          description: Pocket not found
 
 components:
   securitySchemes:
@@ -159,41 +246,3 @@ components:
       type: http
       scheme: bearer
       bearerFormat: JWT
-  schemas:
-    Pocket:
-      type: object
-      properties:
-        pocket_id:
-          type: integer
-          example: 1
-        name:
-          type: string
-          example: "Holiday Fund"
-        type:
-          type: string
-          example: "saving"
-        target_nominal:
-          type: number
-          example: 1000000
-        current_balance:
-          type: number
-          example: 1000000
-        deadline:
-          type: string
-          format: date
-          example: "2025-12-31"
-        status:
-          type: string
-          example: "active"
-        icon_name:
-          type: string
-          example: "beach"
-        color_hex:
-          type: string
-          example: "#FF5733"
-        account_number:
-          type: string
-          example: "1234567890"
-        owner_user_id:
-          type: integer
-          example: 1
