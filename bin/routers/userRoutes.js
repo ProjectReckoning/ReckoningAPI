@@ -12,6 +12,6 @@ router.post('/register', validateRegisterInput, authController.register);
 router.post('/login', authController.login);
 
 // Profile route
-router.get('/me', userAuth.authenticateToken(), authController.userProfile);
+router.get('/me', userAuth.authenticateToken, authController.userProfile);
 
 module.exports = router;
