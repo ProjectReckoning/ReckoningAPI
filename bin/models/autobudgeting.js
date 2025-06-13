@@ -26,7 +26,7 @@ module.exports = (sequelize, DataTypes) => {
     pocket_id: DataTypes.INTEGER,
     recurring_amount: DataTypes.INTEGER,
     treshold_amount: DataTypes.INTEGER,
-    status: DataTypes.STRING,
+    status: DataTypes.ENUM('active', 'inactive', 'paused'),
     is_active: DataTypes.BOOLEAN,
     schedule_type: DataTypes.STRING,
     schedule_value: DataTypes.INTEGER,

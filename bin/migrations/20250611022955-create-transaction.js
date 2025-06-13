@@ -16,7 +16,8 @@ module.exports = {
         type: Sequelize.INTEGER
       },
       type: {
-        type: Sequelize.STRING
+        type: Sequelize.ENUM('income', 'expense', 'transfer'),
+        allowNull: false
       },
       amount: {
         type: Sequelize.DECIMAL

@@ -10,7 +10,8 @@ module.exports = {
         type: Sequelize.INTEGER
       },
       type: {
-        type: Sequelize.STRING
+        type: Sequelize.ENUM('transaction', 'approval', 'reminder', 'alert'),
+        allowNull: false
       },
       message: {
         type: Sequelize.STRING

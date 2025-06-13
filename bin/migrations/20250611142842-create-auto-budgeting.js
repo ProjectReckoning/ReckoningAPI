@@ -22,7 +22,9 @@ module.exports = {
         type: Sequelize.INTEGER
       },
       status: {
-        type: Sequelize.STRING
+        type: Sequelize.ENUM('active', 'inactive'),
+        allowNull: false,
+        defaultValue: 'inactive'
       },
       is_active: {
         type: Sequelize.BOOLEAN
