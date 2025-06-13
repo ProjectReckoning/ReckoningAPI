@@ -2,7 +2,7 @@ const {
   InternalServerError,
   NotFoundError,
   BadRequestError,
-} = require("../helpers/errors");
+} = require("../../helpers/error");
 const { Pocket } = require("../../models");
 const logger = require("../../helpers/utils/logger");
 const { where } = require("sequelize");
