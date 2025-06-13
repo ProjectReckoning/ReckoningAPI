@@ -22,6 +22,11 @@ module.exports = (sequelize, DataTypes) => {
     }
   }
   PocketMember.init({
+    id: {
+      type: DataTypes.INTEGER,
+      autoIncrement: true,
+      primaryKey: true,
+    },
     user_id: DataTypes.INTEGER,
     pocket_id: DataTypes.INTEGER,
     role: DataTypes.ENUM('owner', 'member'),

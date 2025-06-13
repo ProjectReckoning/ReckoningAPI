@@ -3,7 +3,7 @@ const {
   NotFoundError,
   BadRequestError,
 } = require("../../helpers/error");
-const { Pocket } = require("../../models");
+const { Pocket, PocketMember } = require("../../models");
 const logger = require("../../helpers/utils/logger");
 const { where } = require("sequelize");
 
@@ -84,4 +84,20 @@ module.exports.generateUniqueAccountNumber = async () =>{
   }
 
   return accountNumber;
+}
+
+module.exports.addMemberToPocket = async ({pocket_id,user_id,role = 'member', contribution_amount = 0}) => {
+  try{
+    const member = await PocketMember.create({
+      pocket_id,
+      user_id,
+      role,
+      contribution_amount,
+      joined_at: new Date(),
+      is_active: true
+    });
+    return member;
+  }catch(error) {
+    throw new InternalServerError(error.message);
+  }
 }

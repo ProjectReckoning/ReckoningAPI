@@ -30,6 +30,11 @@ module.exports = (sequelize, DataTypes) => {
     }
   }
   Transaction.init({
+    id: {
+      type: DataTypes.INTEGER,
+      autoIncrement: true,
+      primaryKey: true,
+    },
     pocket_id: DataTypes.INTEGER,
     initiator_user_id: DataTypes.INTEGER,
     type: DataTypes.ENUM('income', 'expense', 'transfer'),
