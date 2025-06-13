@@ -67,6 +67,10 @@ module.exports = {
         updatedAt: new Date('2024-01-30')
       }
     ], {});
+
+    await queryInterface.sequelize.query(`
+      SELECT setval('public."Friendships_id_seq"', COALESCE((SELECT MAX(id) FROM "Friendships"), 0) + 1, false);
+    `);
   },
 
   async down(queryInterface, Sequelize) {

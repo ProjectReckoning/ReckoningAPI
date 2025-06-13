@@ -49,6 +49,10 @@ module.exports = {
         account_number: 'SA001234567894'
       }
     ], {});
+
+    await queryInterface.sequelize.query(`
+      SELECT setval('public."MockSavingsAccounts_id_seq"', COALESCE((SELECT MAX(id) FROM "MockSavingsAccounts"), 0) + 1, false);
+    `);
   },
 
   async down(queryInterface, Sequelize) {

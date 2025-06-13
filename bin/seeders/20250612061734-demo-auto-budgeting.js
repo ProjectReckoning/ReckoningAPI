@@ -79,6 +79,10 @@ module.exports = {
         updatedAt: new Date('2024-02-01')
       }
     ], {});
+
+    await queryInterface.sequelize.query(`
+      SELECT setval('public."AutoBudgetings_id_seq"', COALESCE((SELECT MAX(id) FROM "AutoBudgetings"), 0) + 1, false);
+    `);
   },
 
   async down(queryInterface, Sequelize) {

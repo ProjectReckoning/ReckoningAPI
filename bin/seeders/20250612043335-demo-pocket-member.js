@@ -103,6 +103,10 @@ module.exports = {
         updatedAt: new Date(),
       }
     ], {});
+
+    await queryInterface.sequelize.query(`
+      SELECT setval('public."PocketMembers_id_seq"', COALESCE((SELECT MAX(id) FROM "PocketMembers"), 0) + 1, false);
+    `);
   },
 
   async down(queryInterface, Sequelize) {

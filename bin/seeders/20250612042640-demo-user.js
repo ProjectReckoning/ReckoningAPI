@@ -13,7 +13,7 @@ module.exports = {
           name: "Ahmad Rizki",
           phone_number: "081234567890",
           password: hashedPassword, // hashed password
-          pin: 123456,
+          pin: "123456",
           createdAt: new Date(),
           updatedAt: new Date(),
         },
@@ -22,7 +22,7 @@ module.exports = {
           name: "Siti Nurhaliza",
           phone_number: "081234567891",
           password: hashedPassword,
-          pin: 654321,
+          pin: "654321",
           createdAt: new Date(),
           updatedAt: new Date(),
         },
@@ -31,7 +31,7 @@ module.exports = {
           name: "Budi Santoso",
           phone_number: "081234567892",
           password: hashedPassword,
-          pin: 111222,
+          pin: "111222",
           createdAt: new Date(),
           updatedAt: new Date(),
         },
@@ -40,7 +40,7 @@ module.exports = {
           name: "Diana Putri",
           phone_number: "081234567893",
           password: hashedPassword,
-          pin: 333444,
+          pin: "333444",
           createdAt: new Date(),
           updatedAt: new Date(),
         },
@@ -49,13 +49,17 @@ module.exports = {
           name: "Eko Prasetyo",
           phone_number: "081234567894",
           password: hashedPassword,
-          pin: 555666,
+          pin: "555666",
           createdAt: new Date(),
           updatedAt: new Date(),
         },
       ],
       {}
     );
+
+    await queryInterface.sequelize.query(`
+      SELECT setval('public."Users_id_seq"', COALESCE((SELECT MAX(id) FROM "Users"), 0) + 1, false);
+    `);
   },
 
   async down(queryInterface, Sequelize) {

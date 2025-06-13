@@ -67,6 +67,10 @@ module.exports = {
         updatedAt: new Date('2024-03-01')
       }
     ], {});
+
+    await queryInterface.sequelize.query(`
+      SELECT setval('public."Notifications_id_seq"', COALESCE((SELECT MAX(id) FROM "Notifications"), 0) + 1, false);
+    `);
   },
 
   async down(queryInterface, Sequelize) {
