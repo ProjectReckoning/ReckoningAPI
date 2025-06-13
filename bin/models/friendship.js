@@ -22,6 +22,11 @@ module.exports = (sequelize, DataTypes) => {
     }
   }
   Friendship.init({
+    id: {
+      type: DataTypes.INTEGER,
+      autoIncrement: true,
+      primaryKey: true,
+    },
     status: DataTypes.ENUM('pending', 'accepted', 'rejected'),
     user_id_1: DataTypes.INTEGER,
     user_id_2: DataTypes.INTEGER,

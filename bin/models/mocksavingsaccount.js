@@ -17,6 +17,11 @@ module.exports = (sequelize, DataTypes) => {
     }
   }
   MockSavingsAccount.init({
+    id: {
+      type: DataTypes.INTEGER,
+      autoIncrement: true,
+      primaryKey: true,
+    },
     balance: DataTypes.DECIMAL,
     earmarked_balance: DataTypes.DECIMAL,
     user_id: DataTypes.INTEGER,

@@ -17,30 +17,37 @@ module.exports.createPocket = async (req, res) => {
     color_hex: req.body.color_hex,
     account_number: accountNumber,
   };
-  console.log("Pocket Data:", pocketData);
 
   pocketModules
     .createPocket(pocketData)
-    .then((resp) => {
-      logger.info("Pocket created successfully");
-      return wrapper.response(
-        res,
-        "success",
-        wrapper.data(resp),
-        "Pocket created successfully",
-        201
-      );
+    .then((pocket)=>{
+      return pocketModules
+        .addMemberToPocket({
+          pocket_id: pocket.id,
+          user_id: req.userData.id,
+          role: "owner",
+        })
+        .then(() => {
+          logger.info("Pocket created successfully");
+          return wrapper.response(
+            res,
+            "success",
+            wrapper.data(pocket),
+            "Pocket created successfully",
+            201
+          );
+        });
     })
-    .catch((err) => {
-      logger.error("Error creating pocket", err);
+    .catch((error)=> {
+      logger.error("Error creating pocket", error);
       return wrapper.response(
         res,
         "fail",
-        wrapper.error(err),
-        `Error creating pocket. Error: ${err}`,
+        wrapper.error(error),
+        `Error creating pocket. Error: ${error.message}`,
         400
       );
-    });
+    }); 
 };
 
 module.exports.getUserPocket = (req, res) => {

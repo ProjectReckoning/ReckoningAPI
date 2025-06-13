@@ -22,6 +22,11 @@ module.exports = (sequelize, DataTypes) => {
     }
   }
   AutoBudgeting.init({
+    id: {
+      type: DataTypes.INTEGER,
+      autoIncrement: true,
+      primaryKey: true,
+    },
     user_id: DataTypes.INTEGER,
     pocket_id: DataTypes.INTEGER,
     recurring_amount: DataTypes.INTEGER,
