@@ -29,7 +29,7 @@ module.exports = (sequelize, DataTypes) => {
     },
     user_id: DataTypes.INTEGER,
     pocket_id: DataTypes.INTEGER,
-    role: DataTypes.ENUM('owner', 'member'),
+    role: DataTypes.ENUM('owner','admin', 'viewer','spender'),
     contribution_amount: DataTypes.DECIMAL,
     joined_at: DataTypes.DATE,
     is_active: DataTypes.BOOLEAN

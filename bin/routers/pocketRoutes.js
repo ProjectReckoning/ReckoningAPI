@@ -31,4 +31,11 @@ router.delete(
   pocketController.deletePocket
 );
 
+// Router post member to pocket
+router.post(
+  "/:pocketId/members",
+  userAuth.authenticateToken,
+  pocketController.addMembersToPocket
+);
+
 module.exports = router;

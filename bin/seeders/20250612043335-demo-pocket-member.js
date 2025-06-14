@@ -29,7 +29,7 @@ module.exports = {
       {
         user_id: '1',
         pocket_id: '2',
-        role: 'member',
+        role: 'viewer',
         contribution_amount: 2500000,
         joined_at: new Date(),
         is_active: true,
@@ -39,7 +39,7 @@ module.exports = {
       {
         user_id: '3',
         pocket_id: '2',
-        role: 'member',
+        role: 'viewer',
         contribution_amount: 3000000,
         joined_at: new Date(),
         is_active: true,
@@ -73,7 +73,7 @@ module.exports = {
       {
         user_id: '2',
         pocket_id: '4',
-        role: 'member',
+        role: 'viewer',
         contribution_amount: 400000,
         joined_at: new Date(),
         is_active: true,
@@ -83,7 +83,7 @@ module.exports = {
       {
         user_id: '5',
         pocket_id: '4',
-        role: 'member',
+        role: 'viewer',
         contribution_amount: 400000,
         joined_at: new Date(),
         is_active: true,
