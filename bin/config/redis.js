@@ -7,7 +7,7 @@ const redis = new Redis({
   port: config.get('/redis/port'),
   username: config.get('/redis/username'),
   password: config.get('/redis/password'),
-  db: config.get('/redis/db')
+  // db: config.get('/redis/db')
 });
 
 redis.on('connect', () => {
