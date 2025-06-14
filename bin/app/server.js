@@ -9,7 +9,7 @@ const morgan = require("morgan");
 const helmet = require('helmet');
 const swaggerUi = require('swagger-ui-express');
 const YAML = require('yamljs');
-const redis = require('../config/redis');
+// const redis = require('../config/redis');
 const logger = require('../helpers/utils/logger');
 const swaggerDocument = YAML.load(path.resolve(__dirname, '../docs/swagger.yaml'));
 const db = require('../models');
@@ -36,11 +36,11 @@ class AppServer {
       });
 
     // Check redis connection
-    redis.ping().then(() => {
-      logger.info('Redis is ready');
-    }).catch((err) => {
-      logger.error('Redis not ready:', err);
-    });
+    // redis.ping().then(() => {
+    //   logger.info('Redis is ready');
+    // }).catch((err) => {
+    //   logger.error('Redis not ready:', err);
+    // });
 
     this.server.get('/', (req, res) => {
       wrapper.response(res, 'success', wrapper.data('Takua API'), 'This services is running properly.');

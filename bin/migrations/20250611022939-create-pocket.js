@@ -15,7 +15,7 @@ module.exports = {
       type: {
         type: Sequelize.ENUM('saving', 'spending', 'investment', 'business'),
         allowNull: false,
-        defaultValue: 'savings'
+        defaultValue: 'saving'
       },
       target_nominal: {
         type: Sequelize.DECIMAL

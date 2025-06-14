@@ -118,8 +118,8 @@ paths:
                   example: Liburan ke Bali
                 type:
                   type: string
-                  enum: [group, personal]
-                  example: group
+                  enum: [saving, spending,business]
+                  example: spending
                 target_nominal:
                   type: number
                   format: float

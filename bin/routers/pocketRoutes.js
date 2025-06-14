@@ -35,7 +35,7 @@ router.delete(
 router.post(
   "/:pocketId/members",
   userAuth.authenticateToken,
-  pocketController.addMemberToPocket
+  pocketController.addMembersToPocket
 );
 
 module.exports = router;

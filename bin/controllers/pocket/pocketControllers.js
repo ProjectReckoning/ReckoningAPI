@@ -37,7 +37,7 @@ module.exports.createPocket = async (req, res) => {
     const additionalMembers = membersFromRequest.map((member) => ({
       pocket_id: pocket.id,
       user_id: member.user_id,
-      role: member.role || "member",
+      role: member.role || "viewer",
     }));
 
     const allMembers = [ownerMember, ...additionalMembers];
@@ -180,7 +180,7 @@ module.exports.deletePocket = (req,res) => {
 }
 
 // All about the members of the pocket
-module.exports.addMemberToPocket = (req,res) => {
+module.exports.addMembersToPocket = (req,res) => {
   const { pocketId } = req.params;
   const userId = req.userData.id;
   const memberData = req.body.members;
@@ -192,7 +192,7 @@ module.exports.addMemberToPocket = (req,res) => {
   const memberDataArray = memberData.map((member) => ({
     pocket_id: pocketId,
     user_id: member.user_id,
-    role: member.role || 'member',
+    role: member.role || 'viewer',
   }))
 
   pocketModules.bulkAddMembersToPocket(memberDataArray)
