@@ -118,7 +118,7 @@ paths:
                   example: Liburan ke Bali
                 type:
                   type: string
-                  enum: [saving, spending,business]
+                  enum: [saving, spending, business]
                   example: spending
                 target_nominal:
                   type: number
@@ -136,7 +136,7 @@ paths:
                   example: travel
                 color_hex:
                   type: string
-                  example: '#FFAA00'
+                  example: "#FFAA00"
                 members:
                   type: array
                   description: List of additional members to be added to the pocket
@@ -150,8 +150,8 @@ paths:
                         example: 2
                       role:
                         type: string
-                        enum: [member, admin]
-                        default: member
+                        enum: [viewer, admin, spender, owner]
+                        default: viewer
             example:
               name: Liburan ke Bali
               type: group
@@ -162,16 +162,16 @@ paths:
               color_hex: "#FFAA00"
               members:
                 - user_id: 2
-                  role: member
+                  role: viewer
                 - user_id: 3
                 - user_id: 4
-                  role: admin
+                  role: viewer
       responses:
-        '201':
+        "201":
           description: Pocket created successfully
-        '400':
+        "400":
           description: Bad request
-        '500':
+        "500":
           description: Server error
 
   /pocket/{id}:
