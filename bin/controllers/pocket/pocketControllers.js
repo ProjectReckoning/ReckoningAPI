@@ -1,54 +1,75 @@
 const wrapper = require("../../helpers/utils/wrapper");
 const pocketModules = require("../../modules/pocket/pocketModules");
 const logger = require("../../helpers/utils/logger");
+const { sequelize } = require("../../models");
 
 module.exports.createPocket = async (req, res) => {
-  const accountNumber = await pocketModules.generateUniqueAccountNumber();
-  console.log("Generated Account Number:", accountNumber);
-  const pocketData = {
-    name: req.body.name,
-    type: req.body.type,
-    target_nominal: parseFloat(req.body.target_nominal),
-    current_balance: parseFloat(req.body.target_nominal),
-    deadline: req.body.deadline ? new Date(req.body.deadline) : null,
-    status: req.body.status,
-    owner_user_id: req.userData.id,
-    icon_name: req.body.icon_name,
-    color_hex: req.body.color_hex,
-    account_number: accountNumber,
-  };
+  const t = await sequelize.transaction();
+  try {
+    const accountNumber = await pocketModules.generateUniqueAccountNumber();
 
-  pocketModules
-    .createPocket(pocketData)
-    .then((pocket)=>{
-      return pocketModules
-        .addMemberToPocket({
-          pocket_id: pocket.id,
-          user_id: req.userData.id,
-          role: "owner",
-        })
-        .then(() => {
-          logger.info("Pocket created successfully");
-          return wrapper.response(
-            res,
-            "success",
-            wrapper.data(pocket),
-            "Pocket created successfully",
-            201
-          );
-        });
-    })
-    .catch((error)=> {
-      logger.error("Error creating pocket", error);
-      return wrapper.response(
-        res,
-        "fail",
-        wrapper.error(error),
-        `Error creating pocket. Error: ${error.message}`,
-        400
-      );
-    }); 
+    const membersFromRequest = req.body.members || [];
+    
+    pocketModules.validateNoSelfAsMember(membersFromRequest, req.userData.id);
+
+    const pocketData = {
+      name: req.body.name,
+      type: req.body.type,
+      target_nominal: parseFloat(req.body.target_nominal),
+      current_balance: parseFloat(req.body.target_nominal),
+      deadline: req.body.deadline ? new Date(req.body.deadline) : null,
+      status: req.body.status,
+      owner_user_id: req.userData.id,
+      icon_name: req.body.icon_name,
+      color_hex: req.body.color_hex,
+      account_number: accountNumber,
+    };
+
+    const pocket = await pocketModules.createPocket(pocketData, t);
+
+    // Owner sebagai member utama
+    const ownerMember = {
+      pocket_id: pocket.id,
+      user_id: req.userData.id,
+      role: "owner",
+    };
+
+    const additionalMembers = membersFromRequest.map((member) => ({
+      pocket_id: pocket.id,
+      user_id: member.user_id,
+      role: member.role || "member",
+    }));
+
+    const allMembers = [ownerMember, ...additionalMembers];
+
+    const addedMembers = await pocketModules.bulkAddMembersToPocket(allMembers, t);
+
+    await t.commit();
+
+    logger.info("Pocket created and members added successfully");
+    return wrapper.response(
+      res,
+      "success",
+      wrapper.data({
+        pocket,
+        members: addedMembers,
+      }),
+      "Pocket and members created successfully",
+      201
+    );
+  } catch (error) {
+    await t.rollback();
+    logger.error("Error creating pocket and members", error);
+    return wrapper.response(
+      res,
+      "fail",
+      wrapper.error(error),
+      `Error creating pocket. ${error.message}`,
+      400
+    );
+  }
 };
+
 
 module.exports.getUserPocket = (req, res) => {
   pocketModules
@@ -158,3 +179,41 @@ module.exports.deletePocket = (req,res) => {
     })
 }
 
+// All about the members of the pocket
+module.exports.addMemberToPocket = (req,res) => {
+  const { pocketId } = req.params;
+  const userId = req.userData.id;
+  const memberData = req.body.members;
+
+  if(!Array.isArray(memberData)){
+    return wrapper.response(res, 'fail', null, 'Members data must be an array', 400);
+  }
+
+  const memberDataArray = memberData.map((member) => ({
+    pocket_id: pocketId,
+    user_id: member.user_id,
+    role: member.role || 'member',
+  }))
+
+  pocketModules.bulkAddMembersToPocket(memberDataArray)
+    .then((addedMembers) => {
+      logger.info("Members added to pocket successfully");
+      return wrapper.response(
+        res,
+        "success",
+        wrapper.data(addedMembers),
+        "Members added to pocket successfully",
+        201
+      );
+    })
+    .catch((error) => {
+      logger.error("Error adding members to pocket", error);
+      return wrapper.response(
+        res,
+        "fail",
+        wrapper.error(error),
+        `Error adding members to pocket. Error: ${error.message}`,
+        400
+      );
+    });
+}

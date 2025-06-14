@@ -45,7 +45,7 @@ module.exports = (sequelize, DataTypes) => {
       primaryKey: true,
     },
     name: DataTypes.STRING,
-    type: DataTypes.ENUM('savings', 'spending', 'investment', 'business'),
+    type: DataTypes.ENUM('saving', 'spending', 'investment', 'business'),
     target_nominal: DataTypes.DECIMAL,
     current_balance: DataTypes.DECIMAL,
     deadline: DataTypes.DATE,
