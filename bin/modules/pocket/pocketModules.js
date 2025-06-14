@@ -5,9 +5,9 @@ const {
 } = require("../../helpers/error");
 const { Pocket, PocketMember } = require("../../models");
 const logger = require("../../helpers/utils/logger");
-const { where } = require("sequelize");
+const { where, Op } = require("sequelize");
 
-module.exports.createPocket = async (pocketData) => {
+module.exports.createPocket = async (pocketData, t) => {
   try {
     const existData = await this.detailPocket({
       name: pocketData.name,
@@ -20,7 +20,7 @@ module.exports.createPocket = async (pocketData) => {
       throw new BadRequestError("Pocket already exists");
     }
 
-    const result = await Pocket.create(pocketData);
+    const result = await Pocket.create(pocketData, { transaction: t });
     return result;
   } catch (error) {
     console.log(error);
@@ -50,14 +50,14 @@ module.exports.detailPocket = async (attr) => {
   } catch (error) {
     throw new InternalServerError(error.message);
   }
-}
+};
 
-module.exports.getUserPockets =  async (userId) => {
-  try{
+module.exports.getUserPockets = async (userId) => {
+  try {
     const data = await Pocket.findAll({
       where: {
-        owner_user_id: userId
-      }
+        owner_user_id: userId,
+      },
     });
 
     if (!data || data.length === 0) {
@@ -65,43 +65,50 @@ module.exports.getUserPockets =  async (userId) => {
     }
 
     return data;
-  }catch (error) {
+  } catch (error) {
     throw new InternalServerError(error.message);
   }
-}
+};
 
-module.exports.generateUniqueAccountNumber = async () =>{
-  const randomDigits = () => Math.floor(100000000 + Math.random()* 900000000);
+module.exports.generateUniqueAccountNumber = async () => {
+  const randomDigits = () => Math.floor(100000000 + Math.random() * 900000000);
   let accountNumber;
   let isUnique = false;
 
-  while(!isUnique){
+  while (!isUnique) {
     accountNumber = randomDigits();
     accountNumber = accountNumber.toString();
-    const existingPocket = await Pocket.findOne({ where: {account_number: accountNumber}});
-    if(!existingPocket){
+    const existingPocket = await Pocket.findOne({
+      where: { account_number: accountNumber },
+    });
+    if (!existingPocket) {
       isUnique = true;
     }
   }
 
   return accountNumber;
-}
+};
 
-module.exports.addMemberToPocket = async ({pocket_id,user_id,role = 'member', contribution_amount = 0}) => {
-  try{
+module.exports.addMemberToPocket = async ({
+  pocket_id,
+  user_id,
+  role = "member",
+  contribution_amount = 0,
+}) => {
+  try {
     const member = await PocketMember.create({
       pocket_id,
       user_id,
       role,
       contribution_amount,
       joined_at: new Date(),
-      is_active: true
+      is_active: true,
     });
     return member;
-  }catch(error) {
+  } catch (error) {
     throw new InternalServerError(error.message);
   }
-}
+};
 
 module.exports.updatePocket = async (pocketId, userId, updateData) => {
   try {
@@ -132,10 +139,62 @@ module.exports.deletePocket = async (pocketId) => {
     await pocket.destroy();
 
     return { message: "Pocket deleted successfully" };
-  }catch (error) {
+  } catch (error) {
     if (error instanceof NotFoundError) {
       throw error;
     }
     throw new InternalServerError(error.message);
   }
-}
+};
+
+module.exports.bulkAddMembersToPocket = async (memberDataArray, t) => {
+  try {
+    const pocketId = memberDataArray[0]?.pocket_id;
+    const userIds = memberDataArray.map((m) => m.user_id);
+
+    // Cek siapa yang sudah jadi member di pocket ini
+    const existingMembers = await PocketMember.findAll({
+      where: {
+        pocket_id: pocketId,
+        user_id: { [Op.in]: userIds },
+      },
+    });
+
+    const existingUserIds = existingMembers.map((m) => m.user_id);
+
+    // Filter hanya yang belum ada
+    const newMembers = memberDataArray.filter(
+      (m) => !existingUserIds.includes(m.user_id)
+    );
+
+    if (newMembers.length === 0) {
+      throw new Error("All users are already members of this pocket");
+    }
+
+    const added = await PocketMember.bulkCreate(newMembers, {
+      validate: true,
+      transaction: t,
+    });
+
+    return {
+      message: "Members added successfully",
+      members: added,
+      skipped: existingMembers,
+    };
+  } catch (error) {
+    throw new InternalServerError(error.message);
+  }
+};
+
+
+module.exports.validateNoSelfAsMember = (membersFromRequest, userId) => {
+  const isIncluded = membersFromRequest.some(
+    (member) => member.user_id === userId
+  );
+  if (isIncluded) {
+    throw new BadRequestError(
+      "Authenticated user cannot be included as a member"
+    );
+    // throw new ConflictError("Authenticated user cannot be included as a member");
+  }
+};

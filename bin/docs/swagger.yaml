@@ -115,13 +115,14 @@ paths:
               properties:
                 name:
                   type: string
-                  example: Tabungan Liburan
+                  example: Liburan ke Bali
                 type:
-                  type: enum
-                  enum: [savings, spending, business]
-                  example: savings
+                  type: string
+                  enum: [group, personal]
+                  example: group
                 target_nominal:
                   type: number
+                  format: float
                   example: 5000000
                 deadline:
                   type: string
@@ -132,17 +133,46 @@ paths:
                   example: active
                 icon_name:
                   type: string
-                  example: flight
+                  example: travel
                 color_hex:
                   type: string
-                  example: "#FFAA00"
+                  example: '#FFAA00'
+                members:
+                  type: array
+                  description: List of additional members to be added to the pocket
+                  items:
+                    type: object
+                    required:
+                      - user_id
+                    properties:
+                      user_id:
+                        type: integer
+                        example: 2
+                      role:
+                        type: string
+                        enum: [member, admin]
+                        default: member
+            example:
+              name: Liburan ke Bali
+              type: group
+              target_nominal: 5000000
+              deadline: 2025-12-31
+              status: active
+              icon_name: travel
+              color_hex: "#FFAA00"
+              members:
+                - user_id: 2
+                  role: member
+                - user_id: 3
+                - user_id: 4
+                  role: admin
       responses:
-        "201":
+        '201':
           description: Pocket created successfully
-        "400":
-          description: Validation error or failed to create pocket
-        "401":
-          description: Unauthorized
+        '400':
+          description: Bad request
+        '500':
+          description: Server error
 
   /pocket/{id}:
     get:
