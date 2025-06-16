@@ -6,7 +6,7 @@ const SALT_ROUNDS = process.env.SALT_ROUNDS;
 const { User } = require('../../models');
 const jwt = require('jsonwebtoken');
 
-const generateToken = async (data) => {
+module.exports.generateToken = async (data) => {
   const token = jwt.sign(data, config.get('/authentication'), {
     expiresIn: '7d',
     algorithm: 'HS256'
@@ -31,10 +31,15 @@ module.exports.registerUser = async (inputData) => {
 
     const result = data.get({ plain: true });
     delete result.password;
-    
+
     return result;
   } catch (error) {
     logger.error(error);
+    if (
+      error instanceof ConflictError
+    ) {
+      throw error;
+    }
     throw new InternalServerError(error.message);
   }
 };
@@ -82,10 +87,9 @@ module.exports.loginUser = async (loginData) => {
     const user = userData.get({ plain: true });
     delete user.password;
 
-    const token = await generateToken({
+    const token = await this.generateToken({
       id: user.id,
-      phone_number: user.phone_number,
-      role: user.role,
+      phone_number: user.phone_number
     })
 
     return { token };
