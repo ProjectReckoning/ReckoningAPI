@@ -88,4 +88,7 @@ router.patch(
   pocketController.changeOwnerPocket
 );
 
+// History pocket
+router.get('/:pocketId/history', userAuth.authenticateToken, pocketController.getPocketHistory)
+
 module.exports = router;
