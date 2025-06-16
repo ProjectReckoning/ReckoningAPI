@@ -24,6 +24,7 @@ class AppServer {
 
     this.server.use(cors());
     // this.server.use(helmet()); //enable when in prod
+    this.server.set('trust proxy', 1);
 
     this.server.use(morgan(':method: :url :status :response-time ms - :res[content-length]', { stream: morganStream }));
 
@@ -46,9 +47,14 @@ class AppServer {
     this.server.get('/', (req, res) => {
       wrapper.response(res, 'success', wrapper.data('Takua API'), 'This services is running properly.');
     });
-    
+
     // Documentation
-    this.server.use('/docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
+    this.server.use('/docs', swaggerUi.serve, (req, res) => {
+      swaggerDocument.servers = [
+        { url: `${req.protocol}://${req.get('host')}/api/v1` }
+      ];
+      swaggerUi.setup(swaggerDocument)(req, res);
+    });
 
     //Routing
     this.server.use('/api/v1', indexRoutes);
