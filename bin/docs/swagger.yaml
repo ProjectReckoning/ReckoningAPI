@@ -401,6 +401,84 @@ paths:
         "404":
           description: Pocket not found
 
+  /pocket/{pocketId}/history:
+    get:
+      summary: Get pocket transaction history for a specific month
+      tags:
+        - Pocket
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: pocketId
+          required: true
+          schema:
+            type: integer
+          description: Pocket ID
+        - in: query
+          name: month
+          required: false
+          schema:
+            type: string
+            pattern: '^\d{4}-\d{2}$'
+            example: "2025-06"
+          description: Month in YYYY-MM format (defaults to current month if not provided)
+      responses:
+        "200":
+          description: Pocket's transaction history has been fetched
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                    example: true
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        date:
+                          type: string
+                          example: "2025-06-15"
+                        transactions:
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              id:
+                                type: integer
+                                example: 1
+                              type:
+                                type: string
+                                example: Contribution
+                              transaction_type:
+                                type: integer
+                                description: "1 for incoming, 0 for outgoing"
+                                example: 1
+                              amount:
+                                type: number
+                                example: 100000
+                              description:
+                                type: string
+                                example: "Monthly saving"
+                              is_business_expense:
+                                type: boolean
+                                example: false
+                  message:
+                    type: string
+                    example: Pocket's transaction history has been fetched
+                  code:
+                    type: integer
+                    example: 200
+        "400":
+          description: Bad request
+        "401":
+          description: Unauthorized
+        "404":
+          description: Pocket not found or access denied
+
 components:
   securitySchemes:
     bearerAuth:
