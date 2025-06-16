@@ -10,7 +10,8 @@ const config = {
     username: process.env.REDIS_USERNAME,
     password: process.env.REDIS_PASSWORD,
     db: process.env.REDIS_DB
-  }
+  },
+  mongoDbUrl: process.env.MONGO_DATABASE_URL
 };
 
 const store = new confidence.Store(config);

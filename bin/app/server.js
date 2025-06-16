@@ -13,6 +13,7 @@ const redis = require('../config/redis');
 const logger = require('../helpers/utils/logger');
 const swaggerDocument = YAML.load(path.resolve(__dirname, '../docs/swagger.yaml'));
 const db = require('../models');
+const mongoConnectionPooling = require('../config/database/mongodb/connection');
 
 class AppServer {
   constructor() {
@@ -60,6 +61,10 @@ class AppServer {
         }
       });
     });
+
+    logger.info('Connecting to mongo');
+    mongoConnectionPooling.init();
+    logger.info('Connected to mongo');
   }
 }
 
