@@ -82,6 +82,137 @@ paths:
         "401":
           description: Unauthorized
 
+  /user/register-push-token:
+    post:
+      summary: Register Expo push token for notifications
+      tags:
+        - Notification
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - expoPushToken
+              properties:
+                expoPushToken:
+                  type: string
+                  example: "ExponentPushToken[xxxxxxxxxxxxxxxxxxxxxx]"
+      responses:
+        "201":
+          description: Push token registered successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      userId:
+                        type: integer
+                        example: 2
+                      expoPushToken:
+                        type: string
+                        example: thisistoken
+                      _id:
+                        type: string
+                        example: thisisidfrommongo
+                  message:
+                    type: string
+                    example: Push token registered successfully
+              example:
+                data:
+                  userId: 2
+                  expoPushToken: thisistoken
+                  _id: thisisidfrommongo
+                message: Push token registered successfully
+        "400":
+          description: Bad request
+        "401":
+          description: Unauthorized
+
+  /user/login/request-otp:
+    post:
+      summary: Request OTP for web login
+      tags:
+        - Auth
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - phone_number
+                - password
+              properties:
+                phone_number:
+                  type: string
+                  example: "628123456789"
+                password:
+                  type: string
+                  example: "yourPassword"
+      responses:
+        "201":
+          description: OTP sent to registered device
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  phone_number:
+                    type: string
+                  sessionId:
+                    type: string
+        "400":
+          description: Bad request
+        "401":
+          description: Unauthorized
+
+  /user/login/verify-otp:
+    post:
+      summary: Verify OTP for web login
+      tags:
+        - Auth
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - phone_number
+                - sessionId
+                - otp
+              properties:
+                phone_number:
+                  type: string
+                  example: "628123456789"
+                sessionId:
+                  type: string
+                  example: "a1b2c3d4-e5f6-7890-1234-56789abcdef0"
+                otp:
+                  type: string
+                  example: "123456"
+      responses:
+        "201":
+          description: OTP verified, JWT token returned
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token:
+                    type: string
+        "400":
+          description: Bad request
+        "401":
+          description: Invalid or expired OTP
+
   /pocket:
     get:
       summary: Get all user pockets
