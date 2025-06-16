@@ -7,6 +7,8 @@ const {
 const { Pocket, PocketMember, User } = require("../../models");
 const logger = require("../../helpers/utils/logger");
 const { where, Op } = require("sequelize");
+const { Transaction } = require("../../models");
+const { startOfMonth, endOfMonth } = require("date-fns");
 
 module.exports.createPocket = async (pocketData, t) => {
   try {
@@ -383,3 +385,58 @@ module.exports.changeOwnerPocket = async (pocketId, userId, newOwnerId) => {
     throw new InternalServerError(error.message);
   }
 }
+
+module.exports.getPocketHistory = async (pocketId, month) => {
+  try {
+    const startDate = startOfMonth(new Date(month));
+    const endDate = endOfMonth(new Date(month));
+
+    const history = await Transaction.findAll({
+      where: {
+        pocket_id: pocketId,
+        created_at: {
+          [Op.between]: [startDate, endDate],
+        },
+      },
+      order: [["created_at", "DESC"]],
+    });
+
+    const groupedHistory = {};
+
+    const incomingTypes = ["Contribution", "AutoTopUp", "AutoRecurring"];
+    // const outgoingTypes = ["Withdrawal", "Payment"]; // not used actually
+
+    history.forEach((tx) => {
+      const dateKey = tx.created_at.toISOString().split("T")[0];
+
+      const isIncoming = incomingTypes.includes(tx.type);
+      const transactionType = isIncoming ? 1 : 0;
+
+      const mappedTx = {
+        id: tx.id,
+        type: tx.type,
+        transaction_type: transactionType,
+        amount: tx.amount,
+        description: tx.description,
+        is_business_expense: tx.is_business_expense,
+      };
+
+      if (!groupedHistory[dateKey]) {
+        groupedHistory[dateKey] = [];
+      }
+      groupedHistory[dateKey].push(mappedTx);
+    });
+
+    const result = Object.keys(groupedHistory)
+      .sort((a, b) => new Date(b) - new Date(a))
+      .map((date) => ({
+        date,
+        transactions: groupedHistory[date],
+      }));
+
+    return result;
+  } catch (error) {
+    logger.error(error.message);
+    throw new InternalServerError(error.message);
+  }
+};
