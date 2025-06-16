@@ -2,6 +2,7 @@ const wrapper = require("../../helpers/utils/wrapper");
 const pocketModules = require("../../modules/pocket/pocketModules");
 const logger = require("../../helpers/utils/logger");
 const { sequelize } = require("../../models");
+const { getCurrentMonth } = require("../../helpers/utils/dateFormatter");
 
 module.exports.createPocket = async (req, res) => {
   const t = await sequelize.transaction();
@@ -215,5 +216,24 @@ module.exports.addMembersToPocket = (req,res) => {
         `Error adding members to pocket. Error: ${error.message}`,
         400
       );
+    });
+}
+
+module.exports.getPocketHistory = async (req, res) => {
+  const { pocketId } = req.params;
+  let month = req.query.month;
+
+  if (!month) {
+    month = getCurrentMonth();
+  }
+
+  pocketModules.getPocketHistory(pocketId, month)
+    .then(resp => {
+      logger.info("Pocket's transaction history has been fetched");
+      return wrapper.response(res, "success", wrapper.data(resp), "Pocket's transaction history has been fetched", 200);
+    })
+    .catch(error => {
+      logger.error("Error while fetching pocket's transaction history", error);
+      return wrapper.response(res, "fail", wrapper.error(error), `Error while fetching pocket's transaction history. Error: ${error.message}`, 400);
     });
 }
