@@ -24,6 +24,11 @@ module.exports = (sequelize, DataTypes) => {
         as: 'members'
       });
 
+      Pocket.hasMany(models.PocketMember, {
+        foreignKey: 'pocket_id',
+        as: 'pocketMembers'
+      });
+
       // Pocket has many Transactions (One-to-Many)
       Pocket.hasMany(models.Transaction, {
         foreignKey: 'pocket_id',
