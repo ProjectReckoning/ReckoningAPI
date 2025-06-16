@@ -9,7 +9,7 @@ module.exports.createPocket = async (req, res) => {
     const accountNumber = await pocketModules.generateUniqueAccountNumber();
 
     const membersFromRequest = req.body.members || [];
-    
+
     pocketModules.validateNoSelfAsMember(membersFromRequest, req.userData.id);
 
     const pocketData = {
@@ -42,7 +42,10 @@ module.exports.createPocket = async (req, res) => {
 
     const allMembers = [ownerMember, ...additionalMembers];
 
-    const addedMembers = await pocketModules.bulkAddMembersToPocket(allMembers, t);
+    const addedMembers = await pocketModules.bulkAddMembersToPocket(
+      allMembers,
+      t
+    );
 
     await t.commit();
 
@@ -69,7 +72,6 @@ module.exports.createPocket = async (req, res) => {
     );
   }
 };
-
 
 module.exports.getUserPocket = (req, res) => {
   pocketModules
@@ -149,53 +151,85 @@ module.exports.getPocketDetail = (req, res) => {
     });
 };
 
-module.exports.updatePocket = (req,res) => {
+module.exports.updatePocket = (req, res) => {
   const { pocketId } = req.params;
   const userId = req.userData.id;
   const updateData = req.body;
 
-  pocketModules.updatePocket(pocketId, userId, updateData)
-    .then((updatedPocket)=> {
+  pocketModules
+    .updatePocket(pocketId, userId, updateData)
+    .then((updatedPocket) => {
       logger.info("Pocket updated successfully");
-      return wrapper.response(res,'success',wrapper.data(updatedPocket), 'Pocket updated successfully', 200);
+      return wrapper.response(
+        res,
+        "success",
+        wrapper.data(updatedPocket),
+        "Pocket updated successfully",
+        200
+      );
     })
-    .catch((error)=> {
+    .catch((error) => {
       logger.error("Error while updating pocket", error);
-      return wrapper.response(res,'fail',wrapper.error(error),`Error updating pocket. Error: ${error.message} `,400);
+      return wrapper.response(
+        res,
+        "fail",
+        wrapper.error(error),
+        `Error updating pocket. Error: ${error.message} `,
+        400
+      );
     });
-}
+};
 
-module.exports.deletePocket = (req,res) => {
+module.exports.deletePocket = (req, res) => {
   const { pocketId } = req.params;
   pocketModules
     .deletePocket(pocketId)
-    .then(resp => {
+    .then((resp) => {
       logger.info("Pocket deleted successfully");
-      wrapper.response(res, 'success', wrapper.data(resp),'Product has been deleted', 200);
+      wrapper.response(
+        res,
+        "success",
+        wrapper.data(resp),
+        "Product has been deleted",
+        200
+      );
     })
-    .catch(err => {
+    .catch((err) => {
       logger.error("Error while deleting pocket", err);
-      wrapper.response(res,'fail', wrapper.error(err),`Error while deleting pocket. Error: ${err}`,400)
-    })
-}
+      wrapper.response(
+        res,
+        "fail",
+        wrapper.error(err),
+        `Error while deleting pocket. Error: ${err}`,
+        400
+      );
+    });
+};
 
 // All about the members of the pocket
-module.exports.addMembersToPocket = (req,res) => {
+module.exports.addMembersToPocket = (req, res) => {
   const { pocketId } = req.params;
   const userId = req.userData.id;
   const memberData = req.body.members;
 
-  if(!Array.isArray(memberData)){
-    return wrapper.response(res, 'fail', null, 'Members data must be an array', 400);
+  if (!Array.isArray(memberData)) {
+    return wrapper.response(
+      res,
+      "fail",
+      null,
+      "Members data must be an array",
+      400
+    );
   }
 
   const memberDataArray = memberData.map((member) => ({
     pocket_id: pocketId,
     user_id: member.user_id,
-    role: member.role || 'viewer',
-  }))
+    role: member.role || "viewer",
+  }));
 
-  pocketModules.bulkAddMembersToPocket(memberDataArray)
+  pocketModules
+    .bulkAddMembersToPocket(memberDataArray)
     .then((addedMembers) => {
       logger.info("Members added to pocket successfully");
       return wrapper.response(
@@ -216,4 +250,129 @@ module.exports.addMembersToPocket = (req,res) => {
         400
       );
     });
+};
+
+// Get members of a specific pocket
+module.exports.getMembersOfPocket = (req, res) => {
+  const { pocketId } = req.params;
+  const userId = req.userData.id;
+
+  pocketModules
+    .getMembersOfPocket(pocketId, userId)
+    .then((members) => {
+      logger.info("Members of pocket fetched successfully");
+      return wrapper.response(
+        res,
+        "success",
+        wrapper.data(members),
+        "Members of pocket fetched successfully",
+        200
+      );
+    })
+    .catch((error) => {
+      logger.error("Error fetching members of pocket", error);
+      return wrapper.response(
+        res,
+        "fail",
+        wrapper.error(error),
+        `Error fetching members of pocket. Error: ${error.message}`,
+        400
+      );
+    });
+};
+
+module.exports.deletePocketMember = (req, res) => {
+  const { pocketId, memberId } = req.params;
+  const userId = req.userData.id;
+
+  pocketModules
+    .deletePocketMember(pocketId, memberId, userId)
+    .then(() => {
+      logger.info("Pocket member deleted successfully");
+      return wrapper.response(
+        res,
+        "success",
+        null,
+        "Pocket member deleted successfully",
+        200
+      );
+    })
+    .catch((error) => {
+      logger.error("Error deleting pocket member", error);
+      return wrapper.response(
+        res,
+        "fail",
+        wrapper.error(error),
+        `Error deleting pocket member. Error: ${error.message}`,
+        400
+      );
+    });
+};
+
+module.exports.updateRolePocketMember = async (req, res) => {
+  try {
+    const pocketId = parseInt(req.params.pocketId);
+    const memberId = parseInt(req.params.memberId);
+    const userId = req.userData.id;
+    const newRole = req.body.role;
+
+    const result = await pocketModules.updateRolePocketMember(
+      pocketId,
+      userId,
+      memberId,
+      newRole
+    );
+
+    logger.info(
+      `User ${userId} updated role of member ${memberId} to ${newRole}`
+    );
+    return wrapper.response(
+      res,
+      "success",
+      wrapper.data(result),
+      "Member role updated successfully",
+      200
+    );
+  } catch (error) {
+    logger.error("Failed to update member role", error);
+    return wrapper.response(
+      res,
+      "fail",
+      wrapper.error(error),
+      error.message || "Internal server error",
+      error.code || 500
+    );
+  }
+};
+
+module.exports.changeOwnerPocket = async (req,res) => {
+  try {
+    const pocketId = parseInt(req.params.pocketId);
+    const newOwnerId = parseInt(req.body.new_owner_id);
+    const userId = req.userData.id;
+
+    const result = await pocketModules.changeOwnerPocket(
+      pocketId,
+      userId,
+      newOwnerId
+    );
+
+    logger.info(`User ${userId} changed owner of pocket ${pocketId} to ${newOwnerId}`);
+    return wrapper.response(
+      res,
+      "success",
+      wrapper.data(result),
+      "Pocket owner changed successfully",
+      200
+    );
+  } catch (error) {
+    logger.error("Failed to change pocket owner", error);
+    return wrapper.response(
+      res,
+      "fail",
+      wrapper.error(error),
+      error.message || "Internal server error",
+      error.code || 500
+    );
+  }
 }

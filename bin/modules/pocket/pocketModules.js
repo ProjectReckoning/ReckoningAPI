@@ -2,8 +2,9 @@ const {
   InternalServerError,
   NotFoundError,
   BadRequestError,
+  ForbiddenError,
 } = require("../../helpers/error");
-const { Pocket, PocketMember } = require("../../models");
+const { Pocket, PocketMember, User } = require("../../models");
 const logger = require("../../helpers/utils/logger");
 const { where, Op } = require("sequelize");
 
@@ -186,7 +187,6 @@ module.exports.bulkAddMembersToPocket = async (memberDataArray, t) => {
   }
 };
 
-
 module.exports.validateNoSelfAsMember = (membersFromRequest, userId) => {
   const isIncluded = membersFromRequest.some(
     (member) => member.user_id === userId
@@ -198,3 +198,188 @@ module.exports.validateNoSelfAsMember = (membersFromRequest, userId) => {
     // throw new ConflictError("Authenticated user cannot be included as a member");
   }
 };
+
+module.exports.getMembersOfPocket = async (pocketId, userId) => {
+  // Cek apakah userId merupakan anggota dari pocket
+  const isMember = await PocketMember.findOne({
+    where: {
+      pocket_id: pocketId,
+      user_id: userId,
+    },
+  });
+
+  if (!isMember) {
+    throw new ForbiddenError("You do not have access to this pocket");
+  }
+
+  // Ambil semua member dari pocket
+  const members = await PocketMember.findAll({
+    where: { pocket_id: pocketId },
+    include: [
+      {
+        model: User,
+        as: "members",
+        attributes: ["id", "name", "phone_number"],
+      },
+    ],
+  });
+
+  if (!members || members.length === 0) {
+    throw new NotFoundError("No members found for this pocket");
+  }
+
+  return members;
+};
+
+module.exports.deletePocketMember = async (pocketId, userId, memberList) => {
+  try {
+    // Cek apakah userId merupakan anggota dari pocket
+    const isMember = await PocketMember.findOne({
+      where: {
+        pocket_id: pocketId,
+        user_id: userId,
+      },
+    });
+
+    if (
+      !isMember ||
+      (isMember?.role !== "owner" && isMember?.role !== "admin")
+    ) {
+      throw new ForbiddenError("You do not have access to this pocket");
+    }
+
+    // Hapus anggota yang ada di memberList
+    const deletedMembers = await PocketMember.destroy({
+      where: {
+        pocket_id: pocketId,
+        user_id: memberList,
+      },
+    });
+    if (deletedMembers === 0) {
+      throw new NotFoundError("No members found to delete");
+    }
+    return {
+      message: "Members deleted successfully",
+      count: deletedMembers,
+    };
+  } catch (error) {
+    if (error instanceof NotFoundError || error instanceof ForbiddenError) {
+      throw error;
+    }
+    throw new InternalServerError(error.message);
+  }
+};
+
+
+module.exports.updateRolePocketMember = async (pocketId, userId, memberId, newRole) =>{
+  try {
+    // Siapa yang melakukan perubahan?
+    const requestingMember = await PocketMember.findOne({
+      where: {
+        pocket_id: pocketId,
+        user_id: userId,
+      },
+    });
+
+    if (!requestingMember) {
+      throw new ForbiddenError("You are not a member of this pocket");
+    }
+
+    const isRequesterOwner = requestingMember.role === "owner";
+    const isRequesterAdmin = requestingMember.role === "admin";
+
+    if (!isRequesterOwner && !isRequesterAdmin) {
+      throw new ForbiddenError("You do not have permission to update roles");
+    }
+
+    // Target member yang role-nya akan diubah
+    const targetMember = await PocketMember.findOne({
+      where: {
+        pocket_id: pocketId,
+        user_id: memberId,
+      },
+    });
+
+    if (!targetMember) {
+      throw new NotFoundError("Target member not found in this pocket");
+    }
+
+    if (targetMember.role === "owner") {
+      throw new BadRequestError("You cannot change the role of the owner");
+    }
+
+    // Admin tidak boleh mengubah admin lain atau sesama admin
+    if (isRequesterAdmin && targetMember.role !== "member") {
+      throw new ForbiddenError("Admin can only change role of regular members");
+    }
+
+    // owner hanya ada 1 di dalam 1 pocket dan sudah pasti ada owner nya
+    if (newRole == "owner") {
+      throw new BadRequestError("Invalid role specified. Owner role cannot be assigned through this endpoint.");
+    }
+
+    // Owner bisa mengubah admin maupun member
+    targetMember.role = newRole;
+    console.log("Target Member:", targetMember);
+    await targetMember.save();
+
+    return {
+      message: "Member role updated successfully",
+      updatedMember: {
+        user_id: targetMember.user_id,
+        new_role: targetMember.role,
+      },
+    };
+  } catch (error) {
+    if (
+      error instanceof ForbiddenError ||
+      error instanceof NotFoundError ||
+      error instanceof BadRequestError
+    ) {
+      throw error;
+    }
+
+    throw new InternalServerError(error.message);
+  }
+}
+
+module.exports.changeOwnerPocket = async (pocketId, userId, newOwnerId) => {
+  try {
+    const requestingMember = await PocketMember.findOne({
+      where: {
+        pocket_id: pocketId,
+        user_id: userId,
+      },
+    });
+    if (!requestingMember || requestingMember.role !== "owner") {
+      throw new ForbiddenError("You do not have permission to change the owner");
+    }
+    const newOwnerMember = await PocketMember.findOne({
+      where: {
+        pocket_id: pocketId,
+        user_id: newOwnerId,
+      },
+    });
+    if (!newOwnerMember) {
+      throw new NotFoundError("New owner is not a member of this pocket");
+    }
+    if (newOwnerMember.role === "owner") {
+      throw new BadRequestError("This user is already the owner of this pocket");
+    }
+    // Ubah role dari newOwnerMember menjadi owner
+    requestingMember.role = "admin"; // Ubah role dari requestingMember menjadi admin
+    newOwnerMember.role = "owner";
+    await requestingMember.save();
+    await newOwnerMember.save();
+  } catch (error) {
+    if (
+      error instanceof ForbiddenError ||
+      error instanceof NotFoundError ||
+      error instanceof BadRequestError
+    ) {
+      throw error;
+    }
+
+    throw new InternalServerError(error.message);
+  }
+}
