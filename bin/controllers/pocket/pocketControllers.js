@@ -3,6 +3,7 @@ const pocketModules = require("../../modules/pocket/pocketModules");
 const logger = require("../../helpers/utils/logger");
 const { sequelize } = require("../../models");
 const { getCurrentMonth } = require("../../helpers/utils/dateFormatter");
+const pocket = require("../../models/pocket");
 
 module.exports.createPocket = async (req, res) => {
   const t = await sequelize.transaction();
@@ -92,6 +93,7 @@ module.exports.getUserPocket = (req, res) => {
             icon_name: item.icon_name,
             color_hex: item.color_hex,
             account_number: item.account_number,
+            user_role: item.pocketMembers?.[0]?.role,
           });
         }
       });
@@ -118,9 +120,10 @@ module.exports.getUserPocket = (req, res) => {
 };
 
 module.exports.getPocketDetail = (req, res) => {
-  const { pocketId } = req.params;
+  const pocketId = req.params.pocketId;
+  const userId = req.userData.id;
   pocketModules
-    .detailPocket({ id: pocketId, owner_user_id: req.userData.id })
+    .detailPocket(pocketId, userId)
     .then((resp) => {
       if (resp.length === 0) {
         return wrapper.response(
@@ -135,7 +138,7 @@ module.exports.getPocketDetail = (req, res) => {
       return wrapper.response(
         res,
         "success",
-        wrapper.data(resp[0]),
+        wrapper.data(resp),
         "Pocket detail fetched successfully",
         200
       );
@@ -346,7 +349,7 @@ module.exports.updateRolePocketMember = async (req, res) => {
   }
 };
 
-module.exports.changeOwnerPocket = async (req,res) => {
+module.exports.changeOwnerPocket = async (req, res) => {
   try {
     const pocketId = parseInt(req.params.pocketId);
     const newOwnerId = parseInt(req.body.new_owner_id);
@@ -358,7 +361,9 @@ module.exports.changeOwnerPocket = async (req,res) => {
       newOwnerId
     );
 
-    logger.info(`User ${userId} changed owner of pocket ${pocketId} to ${newOwnerId}`);
+    logger.info(
+      `User ${userId} changed owner of pocket ${pocketId} to ${newOwnerId}`
+    );
     return wrapper.response(
       res,
       "success",
@@ -376,7 +381,7 @@ module.exports.changeOwnerPocket = async (req,res) => {
       error.code || 500
     );
   }
-}
+};
 
 module.exports.getPocketHistory = async (req, res) => {
   const { pocketId } = req.params;
@@ -386,13 +391,26 @@ module.exports.getPocketHistory = async (req, res) => {
     month = getCurrentMonth();
   }
 
-  pocketModules.getPocketHistory(pocketId, month)
-    .then(resp => {
+  pocketModules
+    .getPocketHistory(pocketId, month)
+    .then((resp) => {
       logger.info("Pocket's transaction history has been fetched");
-      return wrapper.response(res, "success", wrapper.data(resp), "Pocket's transaction history has been fetched", 200);
+      return wrapper.response(
+        res,
+        "success",
+        wrapper.data(resp),
+        "Pocket's transaction history has been fetched",
+        200
+      );
     })
-    .catch(error => {
+    .catch((error) => {
       logger.error("Error while fetching pocket's transaction history", error);
-      return wrapper.response(res, "fail", wrapper.error(error), `Error while fetching pocket's transaction history. Error: ${error.message}`, 400);
+      return wrapper.response(
+        res,
+        "fail",
+        wrapper.error(error),
+        `Error while fetching pocket's transaction history. Error: ${error.message}`,
+        400
+      );
     });
-}
+};
