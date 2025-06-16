@@ -1,8 +1,27 @@
 const express = require("express");
 const pocketController = require("../controllers/pocket/pocketControllers");
 const userAuth = require("../middlewares/userAuth");
+const pocketBusinessController = require("../controllers/pocket/pocketBusinessControllers");
 
 const router = express.Router();
+
+
+//// KEPERLUAN BISNIS POCKET DISINNI
+router.get(
+  "/business",
+  userAuth.authenticateToken,
+  pocketBusinessController.getBusinessPockets
+)
+
+// router.patch(
+//   "/business/:pocketId/members",
+//   userAuth.authenticateToken,
+//   pocketBusinessController.updateBusinessPocket
+// );
+
+
+
+// KEPERLUAN POCKET BIASA SETELAH INI
 
 // Route get all pockets
 router.get("/", userAuth.authenticateToken, pocketController.getUserPocket);
@@ -36,6 +55,37 @@ router.post(
   "/:pocketId/members",
   userAuth.authenticateToken,
   pocketController.addMembersToPocket
+);
+
+router.get(
+  "/:pocketId/members",
+  userAuth.authenticateToken,
+  pocketController.getMembersOfPocket
+);
+
+router.delete(
+  "/:pocketId/members",
+  userAuth.authenticateToken,
+  pocketController.deletePocketMember
+);
+
+router.patch(
+  "/:pocketId/members",
+  userAuth.authenticateToken,
+  pocketController.updateRolePocketMember
+);
+
+router.patch(
+  "/:pocketId/members/:memberId/role",
+  userAuth.authenticateToken,
+  pocketController.updateRolePocketMember
+);
+
+// change owner of pocket
+router.patch(
+  "/:pocketId/members/change-owner",
+  userAuth.authenticateToken,
+  pocketController.changeOwnerPocket
 );
 
 module.exports = router;

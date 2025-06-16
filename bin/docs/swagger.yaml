@@ -299,9 +299,12 @@ paths:
                   role: viewer
       responses:
         "201":
+        "201":
           description: Pocket created successfully
         "400":
+        "400":
           description: Bad request
+        "500":
         "500":
           description: Server error
 

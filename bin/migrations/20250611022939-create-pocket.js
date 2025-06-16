@@ -13,7 +13,7 @@ module.exports = {
         type: Sequelize.STRING
       },
       type: {
-        type: Sequelize.ENUM('saving', 'spending', 'investment', 'business'),
+        type: Sequelize.ENUM('saving', 'spending', 'business'),
         allowNull: false,
         defaultValue: 'saving'
       },

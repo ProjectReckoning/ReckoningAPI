@@ -12,7 +12,7 @@ module.exports = (sequelize, DataTypes) => {
     static associate(models) {
       PocketMember.belongsTo(models.User, {
         foreignKey: 'user_id',
-        as: 'user'
+        as: 'members'
       });
 
       PocketMember.belongsTo(models.Pocket, {
