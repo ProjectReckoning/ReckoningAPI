@@ -10,7 +10,7 @@ module.exports = (sequelize, DataTypes) => {
     static associate(models) {
       User.hasMany(models.Pocket, {
         foreignKey: "owner_user_id",
-        as: "ownedPockets",
+        as: "owned",
       });
 
       User.hasMany(models.MockSavingsAccount, {
@@ -22,7 +22,7 @@ module.exports = (sequelize, DataTypes) => {
         through: models.PocketMember,
         foreignKey: "user_id",
         otherKey: "pocket_id",
-        as: "memberPockets",
+        as: "members",
       });
 
       User.hasMany(models.Transaction, {
