@@ -53,7 +53,7 @@ module.exports.getBusinessPockets = async (req, res) => {
     });
 }
 
-module.exports.getAllBusinessTransactionsHistory = async (req, res) => {
+module.exports.getAllBusinessLast5TransactionsHistory = async (req, res) => {
   const userData = req.userData;
 
   pocketModules
@@ -68,7 +68,7 @@ module.exports.getAllBusinessTransactionsHistory = async (req, res) => {
     });
 }
 
-module.exports.getBusinessPocketHistory = async (req, res) => {
+module.exports.getLast5BusinessPocketHistory = async (req, res) => {
   const userData = req.userData;
   const pocketId = req.params.pocketId;
 

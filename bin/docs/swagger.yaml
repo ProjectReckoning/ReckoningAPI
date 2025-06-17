@@ -790,7 +790,7 @@ paths:
         "404":
           description: Pocket not found or access denied
   
-  /pocket/business/history:
+  /pocket/business/last-5:
     get:
       summary: Get last 5 business pocket transactions for the logged-in user
       tags:
@@ -859,6 +859,85 @@ paths:
                 code: 200
         "401":
           description: Unauthorized
+  
+  /pocket/business/{pocketId}/last-5:
+    get:
+      summary: Get last 5 business pocket transactions for a specific pocket
+      tags:
+        - Pocket
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: pocketId
+          required: true
+          schema:
+            type: integer
+          description: ID of the business pocket
+      responses:
+        "200":
+          description: Last 5 business pocket transactions fetched successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                    example: true
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        type:
+                          type: string
+                          example: topup
+                        description:
+                          type: string
+                          example: Monthly funding
+                        amount:
+                          type: number
+                          example: 1000000
+                        transaction_type:
+                          type: integer
+                          description: "1 for incoming, 0 for outgoing"
+                          example: 1
+                  message:
+                    type: string
+                    example: Pocket's transaction history has been fetched
+                  code:
+                    type: integer
+                    example: 200
+              example:
+                ok: true
+                data:
+                  - type: topup
+                    description: Monthly funding
+                    amount: 1000000
+                    transaction_type: 1
+                  - type: purchase
+                    description: Office supplies
+                    amount: 250000
+                    transaction_type: 0
+                  - type: withdrawal
+                    description: ATM withdrawal
+                    amount: 500000
+                    transaction_type: 0
+                  - type: reimbursement
+                    description: Business lunch
+                    amount: 150000
+                    transaction_type: 1
+                  - type: payment
+                    description: Software subscription
+                    amount: 200000
+                    transaction_type: 0
+                message: Pocket's transaction history has been fetched
+                code: 200
+        "401":
+          description: Unauthorized
+        "404":
+          description: Pocket not found or access denied
 
   /friendship:
     get:
