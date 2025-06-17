@@ -19,7 +19,9 @@ router.get(
 //   pocketBusinessController.updateBusinessPocket
 // );
 
-router.get('/business/history', userAuth.authenticateToken, pocketBusinessController.getLast5BusinessTransactionsForUser);
+router.get('/business/last-5', userAuth.authenticateToken, pocketBusinessController.getAllBusinessLast5TransactionsHistory);
+router.get('/business/:pocketId/last-5', userAuth.authenticateToken, pocketBusinessController.getLast5BusinessPocketHistory);
+router.get('/business/:pocketId/history', userAuth.authenticateToken, pocketBusinessController.getBusinessPocketTransactionHistory);
 
 // KEPERLUAN POCKET BIASA SETELAH INI
 
