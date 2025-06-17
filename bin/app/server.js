@@ -51,7 +51,7 @@ class AppServer {
     // Documentation
     this.server.use('/docs', swaggerUi.serve, (req, res) => {
       swaggerDocument.servers = [
-        { url: `${req.protocol}://${req.get('host')}/api/v1` }
+        { url: `https://${req.get('host')}/api/v1` }
       ];
       swaggerUi.setup(swaggerDocument)(req, res);
     });
