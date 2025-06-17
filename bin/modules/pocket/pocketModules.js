@@ -495,4 +495,43 @@ module.exports.getPocketHistory = async (pocketId, month) => {
     throw new InternalServerError(error.message);
   }
 };
-;
+
+module.exports.getLast5BusinessTransactionsForUser = async (userId) => {
+  try {
+    const businessPockets = await Pocket.findAll({
+      where: { type: 'business' },
+      include: [{
+        model: PocketMember,
+        as: 'pocketMembers',
+        where: { user_id: userId },
+        attributes: [],
+        required: true
+      }],
+      attributes: ['id']
+    });
+
+    const businessPocketIds = businessPockets.map(p => p.id);
+
+    if (businessPocketIds.length === 0) return [];
+
+    const transactions = await Transaction.findAll({
+      where: {
+        pocket_id: { [Op.in]: businessPocketIds }
+      },
+      order: [['createdAt', 'DESC']],
+      limit: 5
+    });
+
+    const result = transactions.map(tx => ({
+      type: tx.type,
+      description: tx.description,
+      amount: tx.amount,
+      transaction_type: incomingTypes.includes(tx.type) ? 1 : 0
+    }));
+
+    return result;
+  } catch (error) {
+    logger.error(error.message);
+    throw new InternalServerError(error.message);
+  }
+}

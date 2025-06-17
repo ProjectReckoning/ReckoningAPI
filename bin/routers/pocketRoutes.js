@@ -19,7 +19,7 @@ router.get(
 //   pocketBusinessController.updateBusinessPocket
 // );
 
-
+router.get('/business/history', userAuth.authenticateToken, pocketBusinessController.getLast5BusinessTransactionsForUser);
 
 // KEPERLUAN POCKET BIASA SETELAH INI
 

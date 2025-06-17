@@ -52,3 +52,18 @@ module.exports.getBusinessPockets = async (req, res) => {
       );
     });
 }
+
+module.exports.getLast5BusinessTransactionsForUser = async (req, res) => {
+  const userData = req.userData;
+
+  pocketModules
+    .getLast5BusinessTransactionsForUser(userData.id)
+    .then((resp) => {
+      logger.info("Pocket's transaction history has been fetched");
+      return wrapper.response(res, "success", wrapper.data(resp), "Pocket's transaction history has been fetched", 200);
+    })
+    .catch((error) => {
+      logger.error("Error while fetching pocket's transaction history", error);
+      return wrapper.response(res, "fail", wrapper.error(error), `Error while fetching pocket's transaction history. Error: ${error.message}`, 400);
+    });
+}
