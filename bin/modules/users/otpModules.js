@@ -10,6 +10,7 @@ const config = require('../../config');
 const MongoDb = require('../../config/database/mongodb/db');
 const mongoDb = new MongoDb(config.get('/mongoDbUrl'));
 const { v4: uuidv4 } = require('uuid');
+const bcrypt = require('bcrypt');
 
 module.exports.requestOtp = async (reqOtpData) => {
   try {
