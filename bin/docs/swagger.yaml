@@ -524,7 +524,7 @@ paths:
                             example: Siti Nurhaliza
                           phone_number:
                             type: string
-                            example: "081234567891"
+                            example: "6281234567891"
                       members:
                         type: array
                         items:
@@ -538,7 +538,7 @@ paths:
                               example: Budi Santoso
                             phone_number:
                               type: string
-                              example: "081234567892"
+                              example: "6281234567892"
                             PocketMember:
                               type: object
                               properties:
@@ -1058,7 +1058,7 @@ paths:
                           example: Budi Santoso
                         phone_number:
                           type: string
-                          example: 081234567892
+                          example: "6281234567892"
                         status:
                           type: string
                           enum: [accepted, pending]
@@ -1079,12 +1079,12 @@ paths:
                 data:
                   - id: 3
                     name: Budi Santoso
-                    phone_number: 081234567892
+                    phone_number: "6281234567892"
                     status: accepted
                     accepted_at: "2024-01-16T00:00:00.000Z"
                   - id: 4
                     name: Wati Andini
-                    phone_number: 081234567899
+                    phone_number: "6281234567899"
                     status: pending
                     accepted_at: null
                 message: Friendship details fetched successfully
