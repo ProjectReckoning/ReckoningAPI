@@ -860,6 +860,71 @@ paths:
         "401":
           description: Unauthorized
 
+  /friendship:
+    get:
+      tags:
+        - Friendship
+      summary: Get all friendships (accepted and pending)
+      description: Requires login. Returns list of friends excluding the current user, along with their friendship status.
+      security:
+        - bearerAuth: []
+      responses:
+        200:
+          description: Friendship details fetched successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                    example: true
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: integer
+                          example: 3
+                        name:
+                          type: string
+                          example: Budi Santoso
+                        phone_number:
+                          type: string
+                          example: 081234567892
+                        status:
+                          type: string
+                          enum: [accepted, pending]
+                          example: accepted
+                        accepted_at:
+                          type: string
+                          format: date-time
+                          nullable: true
+                          example: "2024-01-16T00:00:00.000Z"
+                  message:
+                    type: string
+                    example: Friendship details fetched successfully
+                  code:
+                    type: integer
+                    example: 200
+              example:
+                ok: true
+                data:
+                  - id: 3
+                    name: Budi Santoso
+                    phone_number: 081234567892
+                    status: accepted
+                    accepted_at: "2024-01-16T00:00:00.000Z"
+                  - id: 4
+                    name: Wati Andini
+                    phone_number: 081234567899
+                    status: pending
+                    accepted_at: null
+                message: Friendship details fetched successfully
+                code: 200
+
+
 components:
   securitySchemes:
     bearerAuth:

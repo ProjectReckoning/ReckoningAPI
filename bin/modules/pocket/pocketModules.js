@@ -315,6 +315,50 @@ module.exports.deletePocketMember = async (pocketId, userId, memberList) => {
   }
 };
 
+
+module.exports.leavePocket = async (pocketId, userId) => {
+  try {
+    // Cari member yang akan keluar
+    const member = await PocketMember.findOne({
+      where: {
+        pocket_id: pocketId,
+        user_id: userId,
+      },
+    });
+
+    if (!member) {
+      throw new BadRequestError("You are not a member of this pocket");
+    }
+
+    // Kalau dia owner, cek apakah masih ada member lain
+    if (member.role === "owner") {
+      const otherMembers = await PocketMember.findAll({
+        where: {
+          pocket_id: pocketId,
+          user_id: { [Op.ne]: userId }, // cari semua kecuali dia sendiri
+        },
+      });
+
+      if (otherMembers.length > 0) {
+        throw new BadRequestError("Owner can't leave while there are other members in the pocket");
+      }
+    }
+
+    // Kalau aman, hapus membership-nya
+    await PocketMember.destroy({
+      where: {
+        pocket_id: pocketId,
+        user_id: userId,
+      },
+    });
+
+    return { message: "Successfully left the pocket" };
+
+  } catch (error) {
+    throw error;
+  }
+};
+
 module.exports.updateRolePocketMember = async (
   pocketId,
   userId,

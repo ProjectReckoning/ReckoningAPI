@@ -414,3 +414,29 @@ module.exports.getPocketHistory = async (req, res) => {
       );
     });
 };
+
+module.exports.leavePocket = async (req, res) => {
+  const { pocketId } = req.params;
+  const userId = req.userData.id;
+
+  try {
+    const result = await pocketModules.leavePocket(pocketId, userId);
+    logger.info(`User ${userId} left pocket ${pocketId}`);
+    return wrapper.response(
+      res,
+      "success",
+      wrapper.data(result),
+      "Successfully left the pocket",
+      200
+    );
+  } catch (error) {
+    logger.error("Error while leaving pocket", error);
+    return wrapper.response(
+      res,
+      "fail",
+      wrapper.error(error),
+      `Error while leaving pocket. Error: ${error.message}`,
+      400
+    );
+  }
+}

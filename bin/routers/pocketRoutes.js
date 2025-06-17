@@ -69,6 +69,13 @@ router.delete(
   pocketController.deletePocketMember
 );
 
+// Leave pocket
+router.delete(
+  "/:pocketId/leave",
+  userAuth.authenticateToken,
+  pocketController.leavePocket
+);
+
 router.patch(
   "/:pocketId/members",
   userAuth.authenticateToken,
