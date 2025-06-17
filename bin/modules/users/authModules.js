@@ -8,7 +8,7 @@ const jwt = require('jsonwebtoken');
 
 module.exports.generateToken = async (data) => {
   const token = jwt.sign(data, config.get('/authentication'), {
-    expiresIn: '7d',
+    expiresIn: '30d',
     algorithm: 'HS256'
   });
   return token;
