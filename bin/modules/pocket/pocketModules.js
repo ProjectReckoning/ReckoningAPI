@@ -9,6 +9,7 @@ const logger = require("../../helpers/utils/logger");
 const { where, Op } = require("sequelize");
 const { Transaction } = require("../../models");
 const { startOfMonth, endOfMonth } = require("date-fns");
+const pocket = require("../../models/pocket");
 
 module.exports.createPocket = async (pocketData, t) => {
   try {
@@ -31,10 +32,10 @@ module.exports.createPocket = async (pocketData, t) => {
   }
 };
 
-module.exports.detailPocket = async (attr) => {
+module.exports.detailPocket = async (pocketId, userId) => {
   try {
-    const data = await Pocket.findAll({
-      where: attr,
+    const data = await Pocket.findOne({
+      where: { id: pocketId },
       attributes: [
         "id",
         "name",
@@ -46,10 +47,49 @@ module.exports.detailPocket = async (attr) => {
         "icon_name",
         "color_hex",
         "account_number",
+        "owner_user_id"
+      ],
+      include: [
+        {
+          model: PocketMember,
+          as: "pocketMembers",
+          where: { user_id: userId },
+          attributes: ["role"],
+          required: false,
+        },
+        {
+          model: User,
+          as: "owner",
+          attributes: ["id", "name", "phone_number"],
+        },
+        {
+          model: User,
+          as: "members",
+          attributes: ["id", "name", "phone_number"],
+        },
       ],
     });
 
-    return data;
+    console.log("Detail Pocket Data:", data);
+
+    if (!data) return null;
+
+    // Tentukan user_role: jika dia member ambil dari PocketMember, kalau bukan, cek apakah owner
+    let user_role = 'viewer'; // fallback
+    if (data.owner_user_id === userId) {
+      user_role = 'owner';
+    } else if (data.pocketMembers?.length) {
+      user_role = data.pocketMembers[0].role;
+    }
+
+    const {pocketMembers, ...pocketDetails} = data.get({ plain: true });
+
+    const result = {
+      ...pocketDetails,
+      user_role,
+    };
+
+    return result;
   } catch (error) {
     throw new InternalServerError(error.message);
   }
@@ -58,9 +98,14 @@ module.exports.detailPocket = async (attr) => {
 module.exports.getUserPockets = async (userId) => {
   try {
     const data = await Pocket.findAll({
-      where: {
-        owner_user_id: userId,
-      },
+      include: [
+        {
+          model: PocketMember,
+          as: "pocketMembers",
+          where: { user_id: userId },
+          attributes: ["role"],
+        },
+      ],
     });
 
     if (!data || data.length === 0) {
@@ -272,8 +317,12 @@ module.exports.deletePocketMember = async (pocketId, userId, memberList) => {
   }
 };
 
-
-module.exports.updateRolePocketMember = async (pocketId, userId, memberId, newRole) =>{
+module.exports.updateRolePocketMember = async (
+  pocketId,
+  userId,
+  memberId,
+  newRole
+) => {
   try {
     // Siapa yang melakukan perubahan?
     const requestingMember = await PocketMember.findOne({
@@ -317,7 +366,9 @@ module.exports.updateRolePocketMember = async (pocketId, userId, memberId, newRo
 
     // owner hanya ada 1 di dalam 1 pocket dan sudah pasti ada owner nya
     if (newRole == "owner") {
-      throw new BadRequestError("Invalid role specified. Owner role cannot be assigned through this endpoint.");
+      throw new BadRequestError(
+        "Invalid role specified. Owner role cannot be assigned through this endpoint."
+      );
     }
 
     // Owner bisa mengubah admin maupun member
@@ -343,7 +394,7 @@ module.exports.updateRolePocketMember = async (pocketId, userId, memberId, newRo
 
     throw new InternalServerError(error.message);
   }
-}
+};
 
 module.exports.changeOwnerPocket = async (pocketId, userId, newOwnerId) => {
   try {
@@ -354,7 +405,9 @@ module.exports.changeOwnerPocket = async (pocketId, userId, newOwnerId) => {
       },
     });
     if (!requestingMember || requestingMember.role !== "owner") {
-      throw new ForbiddenError("You do not have permission to change the owner");
+      throw new ForbiddenError(
+        "You do not have permission to change the owner"
+      );
     }
     const newOwnerMember = await PocketMember.findOne({
       where: {
@@ -366,7 +419,9 @@ module.exports.changeOwnerPocket = async (pocketId, userId, newOwnerId) => {
       throw new NotFoundError("New owner is not a member of this pocket");
     }
     if (newOwnerMember.role === "owner") {
-      throw new BadRequestError("This user is already the owner of this pocket");
+      throw new BadRequestError(
+        "This user is already the owner of this pocket"
+      );
     }
     // Ubah role dari newOwnerMember menjadi owner
     requestingMember.role = "admin"; // Ubah role dari requestingMember menjadi admin
@@ -440,3 +495,4 @@ module.exports.getPocketHistory = async (pocketId, month) => {
     throw new InternalServerError(error.message);
   }
 };
+;
