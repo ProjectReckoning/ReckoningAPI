@@ -184,13 +184,54 @@ module.exports.getAllFriendshipRequests = async (userId) => {
   }
 };
 
+// module.exports.getFriendship = async (userId) => {
+//   try {
+//     const friendships = await Friendship.findAll({
+//       where: {
+//         [Op.or]: [
+//           { user_id_1: userId, status: "accepted" },
+//           { user_id_2: userId, status: "accepted" },
+//         ],
+//       },
+//       include: [
+//         {
+//           model: User,
+//           as: "user1",
+//           attributes: ["id", "name", "phone_number"],
+//         },
+//         {
+//           model: User,
+//           as: "user2",
+//           attributes: ["id", "name", "phone_number"],
+//         },
+//       ],
+//     });
+
+//     if (friendships.length === 0) {
+//       throw new NotFoundError("No friendships found");
+//     }
+
+//     return friendships.map((friendship) => ({
+//       id: friendship.id,
+//       user1: friendship.user_id_1,
+//       user2: friendship.user_id_2,
+//       status: friendship.status,
+//       accepted_at: friendship.accepted_at,
+//     }));
+//   } catch (error) {
+//     if (error instanceof NotFoundError) {
+//       throw error;
+//     }
+//     throw new InternalServerError(error.message);
+//   }
+// };
 module.exports.getFriendship = async (userId) => {
   try {
     const friendships = await Friendship.findAll({
       where: {
         [Op.or]: [
-          { user_id_1: userId, status: "accepted" },
-          { user_id_2: userId, status: "accepted" },
+          { user_id_1: userId },
+          { user_id_2: userId },
         ],
       },
       include: [
@@ -211,13 +252,21 @@ module.exports.getFriendship = async (userId) => {
       throw new NotFoundError("No friendships found");
     }
 
-    return friendships.map((friendship) => ({
-      id: friendship.id,
-      user1: friendship.user_id_1,
-      user2: friendship.user_id_2,
-      status: friendship.status,
-      accepted_at: friendship.accepted_at,
-    }));
+    // ambil teman (yang bukan userId), dengan status
+    const friends = friendships.map(friendship => {
+      const isUser1 = friendship.user_id_1 === userId;
+      const friendUser = isUser1 ? friendship.user2 : friendship.user1;
+
+      return {
+        id: friendUser.id,
+        name: friendUser.name,
+        phone_number: friendUser.phone_number,
+        status: friendship.status,
+        accepted_at: friendship.accepted_at,
+      };
+    });
+
+    return friends;
   } catch (error) {
     if (error instanceof NotFoundError) {
       throw error;
@@ -225,6 +274,7 @@ module.exports.getFriendship = async (userId) => {
     throw new InternalServerError(error.message);
   }
 };
+
 
 
 module.exports.deleteFriendship = async (requestId, userId) => {

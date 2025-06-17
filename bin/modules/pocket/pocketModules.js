@@ -174,14 +174,29 @@ module.exports.updatePocket = async (pocketId, userId, updateData) => {
   }
 };
 
-module.exports.deletePocket = async (pocketId) => {
+module.exports.deletePocket = async (userId,pocketId) => {
   try {
     const pocket = await Pocket.findByPk(pocketId);
     if (!pocket) {
       throw new NotFoundError("Pocket not found");
     }
 
-    await PocketMember.destroy({ where: { pocket_id: pocketId } });
+    // Cek apakah userId adalah owner dari pocket ini
+    if (pocket.owner_user_id !== userId) {
+      throw new ForbiddenError("You do not have permission to delete this pocket");
+    }
+
+    // Cek apakah ada anggota yang masih terdaftar di pocket ini
+    const members = await PocketMember.findAll({
+      where: { pocket_id: pocketId },
+    });
+
+    if (members.length > 1) {
+      throw new BadRequestError(
+        "Cannot delete pocket with existing members. Please remove all members first."
+      );
+    }
+
     await pocket.destroy();
 
     return { message: "Pocket deleted successfully" };
@@ -314,6 +329,33 @@ module.exports.deletePocketMember = async (pocketId, userId, memberList) => {
     throw new InternalServerError(error.message);
   }
 };
+
+
+module.exports.leavePocket = async (pocketId, userId) => {
+  try {
+
+    // Check if the user is a member of the pocket
+    const isMember = await PocketMember.findAll({
+      where: {
+        pocket_id: pocketId
+      },
+    });
+
+    const member = await PocketMember.findOne({
+      where: {
+        pocket_id: pocketId,
+        user_id: userId,
+      },
+    })
+
+    if(member.role === "owner") {
+      throw new BadRequestError("Can't Leave before all members are removed");
+    }
+
+  } catch (error) {
+    
+  }
+}
 
 module.exports.updateRolePocketMember = async (
   pocketId,
