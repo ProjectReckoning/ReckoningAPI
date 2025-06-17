@@ -83,3 +83,19 @@ module.exports.getLast5BusinessPocketHistory = async (req, res) => {
       return wrapper.response(res, "fail", wrapper.error(error), `Error while fetching pocket's transaction history. Error: ${error.message}`, 400);
     });
 }
+
+module.exports.getBusinessPocketTransactionHistory = async (req, res) => {
+  const pocketId = req.params.pocketId;
+  const userData = req.userData;
+  const duration = req.query.duration;
+
+  pocketModules.getBusinessPocketTransactionHistory(userData.id, { pocketId, duration })
+    .then(resp => {
+      logger.info("Pocket's transaction history has been fetched");
+      return wrapper.response(res, 'success', wrapper.data(resp), "Pocket's transaction history has been fetched", 200);
+    })
+    .catch(error => {
+      logger.error("Error while fetching pocket's transaction history", error);
+      return wrapper.response(res, 'fail', wrapper.error(error), `Error while fetching pocket's transaction history. Error: ${error.message}`, 400);
+    })
+}
