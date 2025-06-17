@@ -494,10 +494,18 @@ module.exports.getPocketHistory = async (pocketId, month) => {
   }
 };
 
-module.exports.getLast5BusinessTransactionsForUser = async (userId) => {
+module.exports.getLast5BusinessTransactionsForUser = async (userId, pocketId = null) => {
   try {
+    const incomingTypes = ["Contribution", "AutoTopUp", "AutoRecurring"];
+
+    // 1. Find business pockets the user is a member of (optionally filter by pocketId)
+    const pocketWhere = { type: 'business' };
+    if (pocketId) {
+      pocketWhere.id = pocketId;
+    }
+
     const businessPockets = await Pocket.findAll({
-      where: { type: 'business' },
+      where: pocketWhere,
       include: [{
         model: PocketMember,
         as: 'pocketMembers',
