@@ -53,7 +53,7 @@ module.exports.getBusinessPockets = async (req, res) => {
     });
 }
 
-module.exports.getLast5BusinessTransactionsForUser = async (req, res) => {
+module.exports.getAllBusinessLast5TransactionsHistory = async (req, res) => {
   const userData = req.userData;
 
   pocketModules
@@ -66,4 +66,36 @@ module.exports.getLast5BusinessTransactionsForUser = async (req, res) => {
       logger.error("Error while fetching pocket's transaction history", error);
       return wrapper.response(res, "fail", wrapper.error(error), `Error while fetching pocket's transaction history. Error: ${error.message}`, 400);
     });
+}
+
+module.exports.getLast5BusinessPocketHistory = async (req, res) => {
+  const userData = req.userData;
+  const pocketId = req.params.pocketId;
+
+  pocketModules
+    .getLast5BusinessTransactionsForUser(userData.id, pocketId)
+    .then((resp) => {
+      logger.info("Pocket's transaction history has been fetched");
+      return wrapper.response(res, "success", wrapper.data(resp), "Pocket's transaction history has been fetched", 200);
+    })
+    .catch((error) => {
+      logger.error("Error while fetching pocket's transaction history", error);
+      return wrapper.response(res, "fail", wrapper.error(error), `Error while fetching pocket's transaction history. Error: ${error.message}`, 400);
+    });
+}
+
+module.exports.getBusinessPocketTransactionHistory = async (req, res) => {
+  const pocketId = req.params.pocketId;
+  const userData = req.userData;
+  const duration = req.query.duration;
+
+  pocketModules.getBusinessPocketTransactionHistory(userData.id, { pocketId, duration })
+    .then(resp => {
+      logger.info("Pocket's transaction history has been fetched");
+      return wrapper.response(res, 'success', wrapper.data(resp), "Pocket's transaction history has been fetched", 200);
+    })
+    .catch(error => {
+      logger.error("Error while fetching pocket's transaction history", error);
+      return wrapper.response(res, 'fail', wrapper.error(error), `Error while fetching pocket's transaction history. Error: ${error.message}`, 400);
+    })
 }

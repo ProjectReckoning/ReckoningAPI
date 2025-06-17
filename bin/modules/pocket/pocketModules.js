@@ -8,7 +8,7 @@ const { Pocket, PocketMember, User } = require("../../models");
 const logger = require("../../helpers/utils/logger");
 const { where, Op } = require("sequelize");
 const { Transaction } = require("../../models");
-const { startOfMonth, endOfMonth } = require("date-fns");
+const { startOfMonth, endOfMonth, subDays, subMonths, subYears, startOfDay } = require("date-fns");
 const pocket = require("../../models/pocket");
 
 module.exports.createPocket = async (pocketData, t) => {
@@ -536,10 +536,18 @@ module.exports.getPocketHistory = async (pocketId, month) => {
   }
 };
 
-module.exports.getLast5BusinessTransactionsForUser = async (userId) => {
+module.exports.getLast5BusinessTransactionsForUser = async (userId, pocketId = null) => {
   try {
+    const incomingTypes = ["Contribution", "AutoTopUp", "AutoRecurring"];
+
+    // 1. Find business pockets the user is a member of (optionally filter by pocketId)
+    const pocketWhere = { type: 'business' };
+    if (pocketId) {
+      pocketWhere.id = pocketId;
+    }
+
     const businessPockets = await Pocket.findAll({
-      where: { type: 'business' },
+      where: pocketWhere,
       include: [{
         model: PocketMember,
         as: 'pocketMembers',
@@ -570,6 +578,75 @@ module.exports.getLast5BusinessTransactionsForUser = async (userId) => {
     }));
 
     return result;
+  } catch (error) {
+    logger.error(error.message);
+    throw new InternalServerError(error.message);
+  }
+}
+
+module.exports.getBusinessPocketTransactionHistory = async (userId, { pocketId = null, duration = '30d' } = {}) => {
+  try {
+    const incomeTypes = ["Contribution", "AutoTopUp", "AutoRecurring", "income"];
+
+    const pocketWhere = { type: 'business' };
+    if (pocketId) {
+      pocketWhere.id = pocketId;
+    }
+
+    const businessPockets = await Pocket.findAll({
+      where: pocketWhere,
+      include: [{
+        model: PocketMember,
+        as: 'pocketMembers',
+        where: { user_id: userId },
+        attributes: [],
+        required: true
+      }],
+      attributes: ['id']
+    });
+
+    const businessPocketIds = businessPockets.map(p => p.id);
+    if (businessPocketIds.length === 0) return [];
+
+    let fromDate = new Date();
+    switch (duration) {
+      case '3m':
+        fromDate = subMonths(fromDate, 3);
+        break;
+      case '6m':
+        fromDate = subMonths(fromDate, 6);
+        break;
+      case '1y':
+        fromDate = subYears(fromDate, 1);
+        break;
+      case '30d':
+      default:
+        fromDate = subDays(fromDate, 30);
+        break;
+    }
+    fromDate = startOfDay(fromDate);
+
+    const transactions = await Transaction.findAll({
+      where: {
+        pocket_id: { [Op.in]: businessPocketIds },
+        createdAt: { [Op.gte]: fromDate }
+      },
+      include: [{
+        model: User,
+        as: 'initiator',
+        attributes: ['name']
+      }],
+      order: [['createdAt', 'DESC']]
+    });
+
+    return transactions.map(tx => ({
+      created_at: tx.createdAt,
+      initiator_user: tx.initiator ? tx.initiator.name : null,
+      type: tx.type,
+      amount: tx.amount,
+      purpose: tx.purpose,
+      transaction_type: incomeTypes.includes(tx.type) ? 1 : 0
+    }));
   } catch (error) {
     logger.error(error.message);
     throw new InternalServerError(error.message);
