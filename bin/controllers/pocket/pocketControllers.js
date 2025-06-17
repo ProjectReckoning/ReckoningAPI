@@ -186,8 +186,9 @@ module.exports.updatePocket = (req, res) => {
 
 module.exports.deletePocket = (req, res) => {
   const { pocketId } = req.params;
+  const userId = req.userData.id;
   pocketModules
-    .deletePocket(pocketId)
+    .deletePocket(userId,pocketId)
     .then((resp) => {
       logger.info("Pocket deleted successfully");
       wrapper.response(

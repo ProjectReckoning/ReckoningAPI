@@ -174,14 +174,29 @@ module.exports.updatePocket = async (pocketId, userId, updateData) => {
   }
 };
 
-module.exports.deletePocket = async (pocketId) => {
+module.exports.deletePocket = async (userId,pocketId) => {
   try {
     const pocket = await Pocket.findByPk(pocketId);
     if (!pocket) {
       throw new NotFoundError("Pocket not found");
     }
 
-    await PocketMember.destroy({ where: { pocket_id: pocketId } });
+    // Cek apakah userId adalah owner dari pocket ini
+    if (pocket.owner_user_id !== userId) {
+      throw new ForbiddenError("You do not have permission to delete this pocket");
+    }
+
+    // Cek apakah ada anggota yang masih terdaftar di pocket ini
+    const members = await PocketMember.findAll({
+      where: { pocket_id: pocketId },
+    });
+
+    if (members.length > 1) {
+      throw new BadRequestError(
+        "Cannot delete pocket with existing members. Please remove all members first."
+      );
+    }
+
     await pocket.destroy();
 
     return { message: "Pocket deleted successfully" };
@@ -318,46 +333,29 @@ module.exports.deletePocketMember = async (pocketId, userId, memberList) => {
 
 module.exports.leavePocket = async (pocketId, userId) => {
   try {
-    // Cari member yang akan keluar
+
+    // Check if the user is a member of the pocket
+    const isMember = await PocketMember.findAll({
+      where: {
+        pocket_id: pocketId
+      },
+    });
+
     const member = await PocketMember.findOne({
       where: {
         pocket_id: pocketId,
         user_id: userId,
       },
-    });
+    })
 
-    if (!member) {
-      throw new BadRequestError("You are not a member of this pocket");
+    if(member.role === "owner") {
+      throw new BadRequestError("Can't Leave before all members are removed");
     }
-
-    // Kalau dia owner, cek apakah masih ada member lain
-    if (member.role === "owner") {
-      const otherMembers = await PocketMember.findAll({
-        where: {
-          pocket_id: pocketId,
-          user_id: { [Op.ne]: userId }, // cari semua kecuali dia sendiri
-        },
-      });
-
-      if (otherMembers.length > 0) {
-        throw new BadRequestError("Owner can't leave while there are other members in the pocket");
-      }
-    }
-
-    // Kalau aman, hapus membership-nya
-    await PocketMember.destroy({
-      where: {
-        pocket_id: pocketId,
-        user_id: userId,
-      },
-    });
-
-    return { message: "Successfully left the pocket" };
 
   } catch (error) {
-    throw error;
+    
   }
-};
+}
 
 module.exports.updateRolePocketMember = async (
   pocketId,
