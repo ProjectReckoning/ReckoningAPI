@@ -223,8 +223,74 @@ paths:
       responses:
         "200":
           description: List of user's pockets
-        "401":
-          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                    example: true
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        pocket_id:
+                          type: integer
+                          example: 4
+                        name:
+                          type: string
+                        type:
+                          type: string
+                        target_nominal:
+                          type: string
+                        current_balance:
+                          type: string
+                        deadline:
+                          type: string
+                          format: date-time
+                        status:
+                          type: string
+                        icon_name:
+                          type: string
+                        color_hex:
+                          type: string
+                        account_number:
+                          type: string
+                        user_role:
+                          type: string
+                  message:
+                    type: string
+                  code:
+                    type: integer
+              example:
+                ok: true
+                data:
+                  - pocket_id: 4
+                    name: Arisan Keluarga
+                    type: saving
+                    target_nominal: "2000000"
+                    current_balance: "1200000"
+                    deadline: "2024-07-01T00:00:00.000Z"
+                    status: active
+                    icon_name: family
+                    color_hex: "#96CEB4"
+                    account_number: "PKT001234567893"
+                    user_role: viewer
+                  - pocket_id: 6
+                    name: Liburan Bismillahhhhh
+                    type: spending
+                    target_nominal: "1000000"
+                    current_balance: "1000000"
+                    deadline: "2025-12-31T00:00:00.000Z"
+                    status: active
+                    icon_name: flight_takeoff
+                    color_hex: "#00BCD4"
+                    account_number: "950859915"
+                    user_role: owner
+                message: User pockets fetched successfully
+                code: 200
 
     post:
       summary: Create a new pocket
@@ -246,15 +312,14 @@ paths:
               properties:
                 name:
                   type: string
-                  example: Liburan ke Bali
+                  example: Pocket Keluarga
                 type:
                   type: string
                   enum: [saving, spending, business]
-                  example: spending
+                  example: saving
                 target_nominal:
                   type: number
-                  format: float
-                  example: 5000000
+                  example: 100000000
                 deadline:
                   type: string
                   format: date
@@ -264,13 +329,12 @@ paths:
                   example: active
                 icon_name:
                   type: string
-                  example: travel
+                  example: flight_takeoff
                 color_hex:
                   type: string
-                  example: "#FFAA00"
+                  example: "#00BCD4"
                 members:
                   type: array
-                  description: List of additional members to be added to the pocket
                   items:
                     type: object
                     required:
@@ -278,36 +342,117 @@ paths:
                     properties:
                       user_id:
                         type: integer
-                        example: 2
-                      role:
-                        type: string
-                        enum: [viewer, admin, spender, owner]
-                        default: viewer
-            example:
-              name: Liburan ke Bali
-              type: group
-              target_nominal: 5000000
-              deadline: 2025-12-31
-              status: active
-              icon_name: travel
-              color_hex: "#FFAA00"
-              members:
-                - user_id: 2
-                  role: viewer
-                - user_id: 3
-                - user_id: 4
-                  role: viewer
+                        example: 3
       responses:
         "201":
-          description: Pocket created successfully
-        "400":
-          description: Bad request
-        "500":
-          description: Server error
+          description: Pocket and members created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      pocket:
+                        type: object
+                        properties:
+                          id:
+                            type: integer
+                            example: 9
+                          name:
+                            type: string
+                            example: Pocket Keluarga
+                          type:
+                            type: string
+                            example: saving
+                          target_nominal:
+                            type: string
+                            example: "100000000"
+                          current_balance:
+                            type: string
+                            example: "100000000"
+                          deadline:
+                            type: string
+                            format: date-time
+                            example: 2025-12-31T00:00:00.000Z
+                          status:
+                            type: string
+                            example: active
+                          owner_user_id:
+                            type: integer
+                            example: 2
+                          icon_name:
+                            type: string
+                            example: flight_takeoff
+                          color_hex:
+                            type: string
+                            example: "#00BCD4"
+                          account_number:
+                            type: string
+                            example: "872961193"
+                          updatedAt:
+                            type: string
+                            format: date-time
+                            example: 2025-06-17T02:10:53.934Z
+                          createdAt:
+                            type: string
+                            format: date-time
+                            example: 2025-06-17T02:10:53.934Z
+                      members:
+                        type: object
+                        properties:
+                          message:
+                            type: string
+                            example: Members added successfully
+                          members:
+                            type: array
+                            items:
+                              type: object
+                              properties:
+                                id:
+                                  type: integer
+                                  example: 16
+                                pocket_id:
+                                  type: integer
+                                  example: 9
+                                user_id:
+                                  type: integer
+                                  example: 2
+                                role:
+                                  type: string
+                                  example: owner
+                                createdAt:
+                                  type: string
+                                  format: date-time
+                                updatedAt:
+                                  type: string
+                                  format: date-time
+                                contribution_amount:
+                                  type: string
+                                  nullable: true
+                                joined_at:
+                                  type: string
+                                  nullable: true
+                                is_active:
+                                  type: boolean
+                                  nullable: true
+                          skipped:
+                            type: array
+                            example: []
+                  message:
+                    type: string
+                    example: Pocket and members created successfully
+                  code:
+                    type: integer
+                    example: 201
 
   /pocket/{id}:
     get:
-      summary: Get pocket detail by ID
+      summary: Get pocket details by ID
       tags:
         - Pocket
       security:
@@ -318,14 +463,126 @@ paths:
           required: true
           schema:
             type: integer
-          description: Pocket ID
+          description: ID of the pocket to fetch
+          example: 8
       responses:
         "200":
-          description: Pocket detail data
-        "404":
-          description: Pocket not found or access denied
-        "401":
-          description: Unauthorized
+          description: Pocket detail fetched successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      id:
+                        type: integer
+                        example: 8
+                      name:
+                        type: string
+                        example: Donat Bahagia
+                      type:
+                        type: string
+                        example: business
+                      target_nominal:
+                        type: string
+                        example: "1000000"
+                      current_balance:
+                        type: string
+                        example: "1000000"
+                      deadline:
+                        type: string
+                        format: date-time
+                        example: 2025-12-31T00:00:00.000Z
+                      status:
+                        type: string
+                        example: active
+                      icon_name:
+                        type: string
+                        example: flight_takeoff
+                      color_hex:
+                        type: string
+                        example: "#00BCD4"
+                      account_number:
+                        type: string
+                        example: "648946893"
+                      owner_user_id:
+                        type: integer
+                        example: 2
+                      owner:
+                        type: object
+                        properties:
+                          id:
+                            type: integer
+                            example: 2
+                          name:
+                            type: string
+                            example: Siti Nurhaliza
+                          phone_number:
+                            type: string
+                            example: "081234567891"
+                      members:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            id:
+                              type: integer
+                              example: 3
+                            name:
+                              type: string
+                              example: Budi Santoso
+                            phone_number:
+                              type: string
+                              example: "081234567892"
+                            PocketMember:
+                              type: object
+                              properties:
+                                id:
+                                  type: integer
+                                  example: 15
+                                user_id:
+                                  type: integer
+                                  example: 3
+                                pocket_id:
+                                  type: integer
+                                  example: 8
+                                role:
+                                  type: string
+                                  example: admin
+                                contribution_amount:
+                                  type: string
+                                  nullable: true
+                                  example: null
+                                joined_at:
+                                  type: string
+                                  nullable: true
+                                  example: null
+                                is_active:
+                                  type: boolean
+                                  nullable: true
+                                  example: null
+                                createdAt:
+                                  type: string
+                                  format: date-time
+                                  example: 2025-06-16T06:52:27.702Z
+                                updatedAt:
+                                  type: string
+                                  format: date-time
+                                  example: 2025-06-16T08:41:50.579Z
+                      user_role:
+                        type: string
+                        example: owner
+                  message:
+                    type: string
+                    example: Pocket detail fetched successfully
+                  code:
+                    type: integer
+                    example: 200
 
     patch:
       summary: Update pocket by ID
@@ -339,7 +596,8 @@ paths:
           required: true
           schema:
             type: integer
-          description: Pocket ID
+          description: ID of the pocket to update
+          example: 8
       requestBody:
         required: true
         content:
@@ -349,36 +607,73 @@ paths:
               properties:
                 name:
                   type: string
-                  example: Tabungan Baru
+                  example: diganti wleee
                 type:
-                  type: enum
-                  enum: [savings, spending, business]
-                  example: savings
-                target_nominal:
-                  type: number
-                  example: 7500000
-                deadline:
                   type: string
-                  format: date
-                  example: 2026-01-01
-                status:
-                  type: string
-                  example: active
-                icon_name:
-                  type: string
-                  example: gift
-                color_hex:
-                  type: string
-                  example: "#00AAFF"
+                  enum: [saving, spending, business]
+                  example: spending
       responses:
         "200":
           description: Pocket updated successfully
-        "400":
-          description: Validation error or failed to update
-        "401":
-          description: Unauthorized
-        "404":
-          description: Pocket not found or access denied
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      id:
+                        type: integer
+                        example: 8
+                      name:
+                        type: string
+                        example: diganti wleee
+                      type:
+                        type: string
+                        example: spending
+                      target_nominal:
+                        type: string
+                        example: "1000000"
+                      current_balance:
+                        type: string
+                        example: "1000000"
+                      deadline:
+                        type: string
+                        format: date-time
+                        example: 2025-12-31T00:00:00.000Z
+                      status:
+                        type: string
+                        example: active
+                      owner_user_id:
+                        type: integer
+                        example: 2
+                      icon_name:
+                        type: string
+                        example: flight_takeoff
+                      color_hex:
+                        type: string
+                        example: "#00BCD4"
+                      account_number:
+                        type: string
+                        example: "648946893"
+                      createdAt:
+                        type: string
+                        format: date-time
+                        example: 2025-06-16T06:52:27.685Z
+                      updatedAt:
+                        type: string
+                        format: date-time
+                        example: 2025-06-17T02:20:28.027Z
+                  message:
+                    type: string
+                    example: Pocket updated successfully
+                  code:
+                    type: integer
+                    example: 200
 
     delete:
       summary: Delete pocket by ID
@@ -392,15 +687,31 @@ paths:
           required: true
           schema:
             type: integer
-          description: Pocket ID
+          description: ID of the pocket to delete
+          example: 8
       responses:
         "200":
           description: Pocket deleted successfully
-        "401":
-          description: Unauthorized
-        "404":
-          description: Pocket not found
-
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      message:
+                        type: string
+                        example: Pocket deleted successfully
+                  message:
+                    type: string
+                    example: Product has been deleted
+                  code:
+                    type: integer
+                    example: 200
   /pocket/{pocketId}/history:
     get:
       summary: Get pocket transaction history for a specific month

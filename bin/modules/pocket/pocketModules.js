@@ -13,17 +13,6 @@ const pocket = require("../../models/pocket");
 
 module.exports.createPocket = async (pocketData, t) => {
   try {
-    const existData = await this.detailPocket({
-      name: pocketData.name,
-      owner_user_id: pocketData.owner_user_id,
-    });
-
-    logger.info("Checking if data exist");
-    console.log("Exist Data:", existData);
-    if (existData.length > 0) {
-      throw new BadRequestError("Pocket already exists");
-    }
-
     const result = await Pocket.create(pocketData, { transaction: t });
     return result;
   } catch (error) {
@@ -164,8 +153,17 @@ module.exports.updatePocket = async (pocketId, userId, updateData) => {
       where: { id: pocketId, owner_user_id: userId },
     });
 
-    if (!pocket) {
+    const member = await PocketMember.findOne({
+      where: {pocket_id: pocketId, user_id: userId}
+    })
+
+    if (!pocket && !member) {
       throw new Error("Pocket not found or you don't have access");
+    }
+
+    // Jika dia bukan owner atau admin, tidak boleh update
+    if (member && member.role !== "owner" && member.role !== "admin") {
+      throw new ForbiddenError("You do not have permission to update this pocket");
     }
 
     await pocket.update(updateData);
