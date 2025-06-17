@@ -194,7 +194,7 @@ module.exports.deletePocket = (req, res) => {
         res,
         "success",
         wrapper.data(resp),
-        "Product has been deleted",
+        "Pocket has been deleted",
         200
       );
     })
