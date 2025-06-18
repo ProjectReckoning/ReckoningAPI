@@ -16,7 +16,17 @@ module.exports = {
         type: Sequelize.INTEGER
       },
       type: {
-        type: Sequelize.ENUM('income', 'expense', 'transfer'),
+        type: Sequelize.ENUM(
+          'Contribution', 
+          'Withdrawal', 
+          'Payment', 
+          'AutoTopUp', 
+          'AutoRecurring',
+          'Topup',
+          'Transfer',
+          'Income',
+          'Expense'
+        ),
         allowNull: false
       },
       amount: {
