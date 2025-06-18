@@ -16,6 +16,8 @@ module.exports.generateToken = async (data) => {
 };
 
 module.exports.registerUser = async (inputData) => {
+  const t = await sequelize.transaction();
+
   try {
     const existData = await this.detailUser({
       name: inputData.name,
@@ -28,7 +30,7 @@ module.exports.registerUser = async (inputData) => {
 
     inputData.password = await bcrypt.hash(inputData.password, +SALT_ROUNDS);
 
-    const dataUser = await User.create(inputData);
+    const dataUser = await User.create(inputData, { transaction : t});
 
     const resultUser = dataUser.get({ plain: true });
     delete resultUser.password;
@@ -40,13 +42,15 @@ module.exports.registerUser = async (inputData) => {
       account_number: await generateUniqueAccountNumber(),
     }
 
-    const dataMock = await MockSavingsAccount.create(mockSavingData);
+    const dataMock = await MockSavingsAccount.create(mockSavingData, { transaction: t });
 
     const resultMock = dataMock.get({ plain: true });
 
+    await t.commit();
     return { resultUser, resultMock };
   } catch (error) {
     logger.error(error);
+    t.rollback();
     if (
       error instanceof ConflictError
     ) {
