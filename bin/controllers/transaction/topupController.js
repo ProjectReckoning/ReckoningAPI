@@ -16,6 +16,6 @@ module.exports.initTopUp = async (req, res) => {
     })
     .catch(err => {
       logger.error('Error while topup to pocket', err);
-      wrapper.response(res, 'fail', wrapper.error(err), `Error while topup to pocket. Error: ${err}`, 401);
+      wrapper.response(res, 'fail', wrapper.error(err), `Error while topup to pocket. Error: ${err}`, 400);
     });
 }

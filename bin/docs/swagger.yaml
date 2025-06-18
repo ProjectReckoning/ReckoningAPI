@@ -212,7 +212,7 @@ paths:
           description: Bad request
         "401":
           description: Invalid or expired OTP
-  
+
   /user/add-balance:
     patch:
       summary: Add balance to user's mock savings account
@@ -836,7 +836,7 @@ paths:
           description: Unauthorized
         "404":
           description: Pocket not found or access denied
-  
+
   /pocket/business/last-5:
     get:
       summary: Get last 5 business pocket transactions for the logged-in user
@@ -906,7 +906,7 @@ paths:
                 code: 200
         "401":
           description: Unauthorized
-  
+
   /pocket/business/{pocketId}/last-5:
     get:
       summary: Get last 5 business pocket transactions for a specific pocket
@@ -1136,6 +1136,92 @@ paths:
                     accepted_at: null
                 message: Friendship details fetched successfully
                 code: 200
+
+  /transaction/topup:
+    post:
+      summary: Top up a pocket from user's mock savings account
+      tags:
+        - Transaction
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - balance
+                - pocket_id
+              properties:
+                balance:
+                  type: number
+                  example: 100000
+                pocket_id:
+                  type: integer
+                  example: 4
+      responses:
+        "201":
+          description: Topup to pocket success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      id:
+                        type: integer
+                        example: 123
+                      pocket_id:
+                        type: integer
+                        example: 4
+                      initiator_user_id:
+                        type: integer
+                        example: 2
+                      type:
+                        type: string
+                        example: Topup
+                      amount:
+                        type: number
+                        example: 100000
+                      purpose:
+                        type: string
+                        example: Topup to Arisan Keluarga - John Doe
+                      status:
+                        type: string
+                        example: completed
+                      description:
+                        type: string
+                        nullable: true
+                        example: null
+                      is_business_expense:
+                        type: boolean
+                        example: false
+                      createdAt:
+                        type: string
+                        format: date-time
+                        example: 2025-06-18T10:00:00.000Z
+                      updatedAt:
+                        type: string
+                        format: date-time
+                        example: 2025-06-18T10:00:00.000Z
+                  message:
+                    type: string
+                    example: Topup to pocket success
+                  code:
+                    type: integer
+                    example: 201
+        "401":
+          description: Unauthorized
+        "404":
+          description: User/Pocket not found or user is not a member of that pocket
+        "400":
+          description: Not enough balance or bad request
 
 components:
   securitySchemes:
