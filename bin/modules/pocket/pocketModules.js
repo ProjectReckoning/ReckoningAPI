@@ -129,7 +129,12 @@ module.exports.generateUniqueAccountNumber = async () => {
     const existingPocket = await Pocket.findOne({
       where: { account_number: accountNumber },
     });
-    if (!existingPocket) {
+
+    const existingMock = await MockSavingsAccount.findOne({
+      where: { account_number: accountNumber },
+    });
+
+    if (!existingPocket && !existingMock) {
       isUnique = true;
     }
   }

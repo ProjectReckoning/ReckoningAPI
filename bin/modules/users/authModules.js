@@ -3,8 +3,9 @@ const { InternalServerError, ConflictError, NotFoundError, UnauthorizedError } =
 const bcrypt = require('bcrypt');
 const config = require('../../config');
 const SALT_ROUNDS = process.env.SALT_ROUNDS;
-const { User } = require('../../models');
+const { User, MockSavingsAccount } = require('../../models');
 const jwt = require('jsonwebtoken');
+const { generateUniqueAccountNumber } = require('../pocket/pocketModules');
 
 module.exports.generateToken = async (data) => {
   const token = jwt.sign(data, config.get('/authentication'), {
@@ -27,12 +28,23 @@ module.exports.registerUser = async (inputData) => {
 
     inputData.password = await bcrypt.hash(inputData.password, +SALT_ROUNDS);
 
-    const data = await User.create(inputData);
+    const dataUser = await User.create(inputData);
 
-    const result = data.get({ plain: true });
-    delete result.password;
+    const resultUser = dataUser.get({ plain: true });
+    delete resultUser.password;
 
-    return result;
+    const mockSavingData = {
+      balance: 0,
+      earmarked_balance: 0,
+      user_id: resultUser.id,
+      account_number: await generateUniqueAccountNumber(),
+    }
+
+    const dataMock = await MockSavingsAccount.create(mockSavingData);
+
+    const resultMock = dataMock.get({ plain: true });
+
+    return { resultUser, resultMock };
   } catch (error) {
     logger.error(error);
     if (

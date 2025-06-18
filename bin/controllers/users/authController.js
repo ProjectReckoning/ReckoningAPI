@@ -13,7 +13,7 @@ module.exports.register = async (req, res) => {
   authModules.registerUser(inputData)
     .then(resp => {
       logger.info('User has been registered in');
-      wrapper.response(res, 'success', wrapper.data(resp), 'User has logged in', 201);
+      wrapper.response(res, 'success', wrapper.data(resp), 'User has been registered in', 201);
     })
     .catch(err => {
       logger.error('Error while registering user', err);

@@ -1,5 +1,6 @@
 const express = require('express');
 const authController = require('../controllers/users/authController');
+const userController = require('../controllers/users/userController');
 const otpController = require('../controllers/users/otpController');
 const notificationController = require('../controllers/users/notificationController');
 const validateRegisterInput = require('../middlewares/validator/registerValidator');
@@ -20,5 +21,8 @@ router.get('/me', userAuth.authenticateToken, authController.userProfile);
 router.post('/register-push-token', userAuth.authenticateToken, notificationController.registerPushToken);
 router.post('/login/request-otp', otpController.requestOtp);
 router.post('/login/verify-otp', otpController.verifyOtp);
+
+// Bank Account route
+router.patch('/add-balance', userAuth.authenticateToken, userController.addBalance);
 
 module.exports = router;
