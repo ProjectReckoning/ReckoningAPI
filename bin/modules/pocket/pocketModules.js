@@ -23,6 +23,17 @@ module.exports.createPocket = async (pocketData, t) => {
 
 module.exports.detailPocket = async (pocketId, userId) => {
   try {
+    const isMember = await PocketMember.findOne({
+      where: {
+        pocket_id: pocketId,
+        user_id: userId,
+      }
+    })
+
+    if (!isMember) {
+      throw new ForbiddenError("You do not have access to this pocket");
+    }
+    
     const data = await Pocket.findOne({
       where: { id: pocketId },
       attributes: [
