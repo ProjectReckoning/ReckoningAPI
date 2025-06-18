@@ -101,10 +101,7 @@ module.exports = {
       ],
       {}
     );
-
-    await queryInterface.sequelize.query(`
-      SELECT setval('public."PocketMembers_id_seq"', COALESCE((SELECT MAX(id) FROM "PocketMembers"), 0) + 1, false);
-    `);
+    
 
     // 4. Insert Transactions
     await queryInterface.bulkInsert(
@@ -306,6 +303,18 @@ module.exports = {
 
     await queryInterface.sequelize.query(`
       SELECT setval('public."Transactions_id_seq"', COALESCE((SELECT MAX(id) FROM "Transactions"), 0) + 1, false);
+    `);
+    await queryInterface.sequelize.query(`
+      SELECT setval('public."PocketMembers_id_seq"', COALESCE((SELECT MAX(id) FROM "PocketMembers"), 0) + 1, false);
+    `);
+    await queryInterface.sequelize.query(`
+      SELECT setval('public."Users_id_seq"', COALESCE((SELECT MAX(id) FROM "Users"), 0) + 1, false);
+    `);
+    await queryInterface.sequelize.query(`
+      SELECT setval('public."Pockets_id_seq"', COALESCE((SELECT MAX(id) FROM "Pockets"), 0) + 1, false);
+    `);
+    await queryInterface.sequelize.query(`
+      SELECT setval('public."MockSavingsAccounts_id_seq"', COALESCE((SELECT MAX(id) FROM "MockSavingsAccounts"), 0) + 1, false);
     `);
   },
 
