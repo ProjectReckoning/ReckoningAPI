@@ -50,7 +50,7 @@ module.exports.registerUser = async (inputData) => {
     return { resultUser, resultMock };
   } catch (error) {
     logger.error(error);
-    t.rollback();
+    await t.rollback();
     if (
       error instanceof ConflictError
     ) {
