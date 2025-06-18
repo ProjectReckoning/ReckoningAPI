@@ -5,6 +5,8 @@ const mongoDb = new MongoDb(config.get('/mongoDbUrl'));
 // const { User } = require('../../models');
 const authModules = require('./authModules');
 const { NotFoundError, InternalServerError } = require('../../helpers/error');
+const { Expo } = require('expo-server-sdk');
+const expo = new Expo();
 
 module.exports.registerPushToken = async (notifData) => {
   try {
@@ -18,7 +20,7 @@ module.exports.registerPushToken = async (notifData) => {
       }
     }
 
-    const userData = await authModules.detailUser({id: notifData.userId});
+    const userData = await authModules.detailUser({ id: notifData.userId });
 
     if (!userData) {
       logger.error('User not found while registering push token');
@@ -40,4 +42,37 @@ module.exports.registerPushToken = async (notifData) => {
     }
     throw new InternalServerError(error.message);
   }
+}
+
+module.exports.setNotificationData = async ({ pushToken, title, body, data = null }) => {
+  const messages = [{
+    to: pushToken,
+    sound: 'default',
+    title,
+    body,
+    data,
+  }];
+  return messages;
+}
+
+module.exports.pushNotification = async (messages) => {
+  try {
+    const chunks = expo.chunkPushNotifications(messages);
+    for (let chunk of chunks) {
+      await expo.sendPushNotificationsAsync(chunk);
+    }
+  } catch (error) {
+    logger.error(error);
+    throw new InternalServerError(error.message);
+  }
+}
+
+module.exports.getPushToken = async (userId) => {
+  mongoDb.setCollection('usersToken');
+  const pushEntry = await mongoDb.findOne({ userId: userId });
+  if (!pushEntry?.expoPushToken) {
+    throw new ConflictError('No push token registered')
+  }
+
+  return pushEntry.expoPushToken;
 }
