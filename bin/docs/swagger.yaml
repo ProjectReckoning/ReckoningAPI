@@ -233,7 +233,7 @@ paths:
                   type: number
                   example: 100000
       responses:
-        "201":
+        "200":
           description: Balance added successfully
           content:
             application/json:
@@ -254,7 +254,7 @@ paths:
                     example: User has updated their balance
                   code:
                     type: integer
-                    example: 201
+                    example: 200
         "401":
           description: Unauthorized
         "404":
@@ -1198,7 +1198,7 @@ paths:
                   type: integer
                   example: 4
       responses:
-        "201":
+        "200":
           description: Topup to pocket success
           content:
             application/json:
@@ -1252,13 +1252,99 @@ paths:
                     example: Topup to pocket success
                   code:
                     type: integer
-                    example: 201
+                    example: 200
         "401":
           description: Unauthorized
         "404":
           description: User/Pocket not found or user is not a member of that pocket
         "400":
           description: Not enough balance or bad request
+
+  /transaction/withdraw:
+    post:
+      summary: Withdraw from a pocket to user's mock savings account
+      tags:
+        - Transaction
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - balance
+                - pocket_id
+              properties:
+                balance:
+                  type: number
+                  example: 50000
+                pocket_id:
+                  type: integer
+                  example: 4
+      responses:
+        "200":
+          description: Withdraw from pocket success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      id:
+                        type: integer
+                        example: 321
+                      pocket_id:
+                        type: integer
+                        example: 4
+                      initiator_user_id:
+                        type: integer
+                        example: 2
+                      type:
+                        type: string
+                        example: Withdrawal
+                      amount:
+                        type: number
+                        example: 50000
+                      purpose:
+                        type: string
+                        example: Withdrawal from Arisan Keluarga - John Doe
+                      status:
+                        type: string
+                        example: completed
+                      description:
+                        type: string
+                        nullable: true
+                        example: null
+                      is_business_expense:
+                        type: boolean
+                        example: false
+                      createdAt:
+                        type: string
+                        format: date-time
+                        example: 2025-06-18T10:00:00.000Z
+                      updatedAt:
+                        type: string
+                        format: date-time
+                        example: 2025-06-18T10:00:00.000Z
+                  message:
+                    type: string
+                    example: Withdraw from pocket success
+                  code:
+                    type: integer
+                    example: 200
+        "401":
+          description: Unauthorized
+        "404":
+          description: User/Pocket not found or user is not a member of that pocket
+        "400":
+          description: Balance to withdraw is over your contribution or bad request
 
 components:
   securitySchemes:

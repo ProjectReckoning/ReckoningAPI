@@ -47,7 +47,7 @@ module.exports.userProfile = async (req, res) => {
       const result = {
         name: resp.name
       }
-      wrapper.response(res, 'success', wrapper.data(result), 'User data has been fetched', 201);
+      wrapper.response(res, 'success', wrapper.data(result), 'User data has been fetched', 200);
     })
     .catch(err => {
       logger.error('Error while fetching user data', err);

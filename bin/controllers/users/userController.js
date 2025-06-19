@@ -9,7 +9,7 @@ module.exports.addBalance = async (req, res) => {
   userModules.addBalance(userData.id, balance)
     .then(resp => {
       logger.info('User has updated their balance');
-      wrapper.response(res, 'success', wrapper.data(resp), 'User has updated their balance', 201);
+      wrapper.response(res, 'success', wrapper.data(resp), 'User has updated their balance', 200);
     })
     .catch(err => {
       logger.error('Error while updating user balance', err);

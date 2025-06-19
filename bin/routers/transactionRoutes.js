@@ -1,10 +1,13 @@
 const express = require('express');
-const topupController = require('../controllers/transaction/topupController');
+const transactionController = require('../controllers/transaction/transactionController');
 const userAuth = require('../middlewares/userAuth');
 
 const router = express.Router();
 
 // Top Up
-router.post('/topup', userAuth.authenticateToken, topupController.initTopUp);
+router.post('/topup', userAuth.authenticateToken, transactionController.initTopUp);
+
+// Withdrawal
+router.post('/withdraw', userAuth.authenticateToken, transactionController.initWithdraw);
 
 module.exports = router;
