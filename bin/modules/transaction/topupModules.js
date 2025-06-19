@@ -14,12 +14,12 @@ module.exports.initTopUp = async (userId, topupData) => {
       }),
       Pocket.findOne({
         where: {
-          id: topupData.dest_pocket_id
+          id: topupData.pocket_id
         }
       }),
       PocketMember.findOne({
         where: {
-          pocket_id: topupData.dest_pocket_id,
+          pocket_id: topupData.pocket_id,
           user_id: userId
         }
       }),
@@ -40,9 +40,10 @@ module.exports.initTopUp = async (userId, topupData) => {
     }
 
     // Add user's MockSavingsAccount earmarked balance
-    await MockSavingsAccount.update(
+    await MockSavingsAccount.increment(
       { 
-        earmarked_balance: Sequelize.literal(`earmarked_balance + ${topupData.balance}`) 
+        // earmarked_balance: Sequelize.literal(`earmarked_balance + ${topupData.balance}`) 
+        earmarked_balance: topupData.balance
       },
       {
         where: {
@@ -53,26 +54,28 @@ module.exports.initTopUp = async (userId, topupData) => {
     )
 
     // Add balance to pocket's current_balance
-    await Pocket.update(
+    await Pocket.increment(
       {
-        current_balance: Sequelize.literal(`current_balance + ${topupData.balance}`)
+        // current_balance: Sequelize.literal(`current_balance + ${topupData.balance}`)
+        current_balance: topupData.balance
       },
       {
         where: {
-          id: topupData.dest_pocket_id,
+          id: topupData.pocket_id,
         },
         transaction: t
       }
     )
 
     // Add balance to user's pocket member contribution_amount
-    await PocketMember.update(
+    await PocketMember.increment(
       {
-        contribution_amount: Sequelize.literal(`contribution_amount + ${topupData.balance}`)
+        // contribution_amount: Sequelize.literal(`contribution_amount + ${topupData.balance}`)
+        contribution_amount: topupData.balance
       },
       {
         where: {
-          pocket_id: topupData.dest_pocket_id,
+          pocket_id: topupData.pocket_id,
           user_id: userId
         },
         transaction: t
@@ -81,7 +84,7 @@ module.exports.initTopUp = async (userId, topupData) => {
 
     // Add the transaction to Transaction table for history
     const transactionData = {
-      pocket_id: topupData.dest_pocket_id,
+      pocket_id: topupData.pocket_id,
       initiator_user_id: userId,
       type: 'Topup',
       amount: topupData.balance,

@@ -4,7 +4,7 @@ const wrapper = require('../../helpers/utils/wrapper');
 
 module.exports.addBalance = async (req, res) => {
   const userData = req.userData;
-  const balance = req.body.balance;
+  const balance = parseFloat(req.body.balance);
 
   userModules.addBalance(userData.id, balance)
     .then(resp => {

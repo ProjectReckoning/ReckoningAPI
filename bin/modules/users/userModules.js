@@ -5,8 +5,8 @@ const { Sequelize } = require('sequelize');
 
 module.exports.addBalance = async (userId, balance) => {
   try {
-    const [affectedRows] = await MockSavingsAccount.update(
-      { balance: Sequelize.literal(`balance + ${balance}`) },
+    const [affectedRows] = await MockSavingsAccount.increment(
+      { balance: balance },
       { where: { user_id: userId } }
     );
 
