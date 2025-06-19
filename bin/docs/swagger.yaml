@@ -382,6 +382,7 @@ paths:
                   example: "#00BCD4"
                 members:
                   type: array
+                  description: List of additional members to invite (excluding the creator)
                   items:
                     type: object
                     required:
@@ -390,6 +391,10 @@ paths:
                       user_id:
                         type: integer
                         example: 3
+                      role:
+                        type: string
+                        enum: [viewer, admin, spender]
+                        example: viewer
       responses:
         "201":
           description: Pocket and members created successfully
@@ -404,98 +409,58 @@ paths:
                   data:
                     type: object
                     properties:
-                      pocket:
-                        type: object
-                        properties:
-                          id:
-                            type: integer
-                            example: 9
-                          name:
-                            type: string
-                            example: Pocket Keluarga
-                          type:
-                            type: string
-                            example: saving
-                          target_nominal:
-                            type: string
-                            example: "100000000"
-                          current_balance:
-                            type: string
-                            example: "100000000"
-                          deadline:
-                            type: string
-                            format: date-time
-                            example: 2025-12-31T00:00:00.000Z
-                          status:
-                            type: string
-                            example: active
-                          owner_user_id:
-                            type: integer
-                            example: 2
-                          icon_name:
-                            type: string
-                            example: flight_takeoff
-                          color_hex:
-                            type: string
-                            example: "#00BCD4"
-                          account_number:
-                            type: string
-                            example: "872961193"
-                          updatedAt:
-                            type: string
-                            format: date-time
-                            example: 2025-06-17T02:10:53.934Z
-                          createdAt:
-                            type: string
-                            format: date-time
-                            example: 2025-06-17T02:10:53.934Z
-                      members:
-                        type: object
-                        properties:
-                          message:
-                            type: string
-                            example: Members added successfully
-                          members:
-                            type: array
-                            items:
-                              type: object
-                              properties:
-                                id:
-                                  type: integer
-                                  example: 16
-                                pocket_id:
-                                  type: integer
-                                  example: 9
-                                user_id:
-                                  type: integer
-                                  example: 2
-                                role:
-                                  type: string
-                                  example: owner
-                                createdAt:
-                                  type: string
-                                  format: date-time
-                                updatedAt:
-                                  type: string
-                                  format: date-time
-                                contribution_amount:
-                                  type: string
-                                  nullable: true
-                                joined_at:
-                                  type: string
-                                  nullable: true
-                                is_active:
-                                  type: boolean
-                                  nullable: true
-                          skipped:
-                            type: array
-                            example: []
+                      id:
+                        type: integer
+                        example: 9
+                      name:
+                        type: string
+                        example: Pocket Keluarga
+                      type:
+                        type: string
+                        example: saving
+                      target_nominal:
+                        type: string
+                        example: "100000000"
+                      current_balance:
+                        type: string
+                        example: "0"
+                      deadline:
+                        type: string
+                        format: date-time
+                        example: 2025-12-31T00:00:00.000Z
+                      status:
+                        type: string
+                        example: active
+                      owner_user_id:
+                        type: integer
+                        example: 2
+                      icon_name:
+                        type: string
+                        example: flight_takeoff
+                      color_hex:
+                        type: string
+                        example: "#00BCD4"
+                      account_number:
+                        type: string
+                        example: "872961193"
+                      updatedAt:
+                        type: string
+                        format: date-time
+                        example: 2025-06-17T02:10:53.934Z
+                      createdAt:
+                        type: string
+                        format: date-time
+                        example: 2025-06-17T02:10:53.934Z
                   message:
                     type: string
-                    example: Pocket and members created successfully
+                    example: Pocket creation and invite friend success
                   code:
                     type: integer
                     example: 201
+        "400":
+          description: Bad request
+        "401":
+          description: Unauthorized
 
   /pocket/{id}:
     get:

@@ -105,7 +105,8 @@ module.exports.loginUser = async (loginData) => {
 
     const token = await this.generateToken({
       id: user.id,
-      phone_number: user.phone_number
+      phone_number: user.phone_number,
+      name: user.name
     })
 
     return { token };

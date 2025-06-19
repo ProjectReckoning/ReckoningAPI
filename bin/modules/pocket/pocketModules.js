@@ -4,19 +4,73 @@ const {
   BadRequestError,
   ForbiddenError,
 } = require("../../helpers/error");
-const { Pocket, PocketMember, User } = require("../../models");
+const { Pocket, PocketMember, User, sequelize } = require("../../models");
 const logger = require("../../helpers/utils/logger");
 const { where, Op } = require("sequelize");
 const { Transaction } = require("../../models");
 const { startOfMonth, endOfMonth, subDays, subMonths, subYears, startOfDay } = require("date-fns");
-const pocket = require("../../models/pocket");
+const config = require('../../config');
+const MongoDb = require('../../config/database/mongodb/db');
+const mongoDb = new MongoDb(config.get('/mongoDbUrl'));
+const notificationModules = require('../users/notificationModules');
 
-module.exports.createPocket = async (pocketData, t) => {
+module.exports.createPocket = async (pocketData, owner, additionalMembers) => {
+  const t = await sequelize.transaction();
   try {
-    const result = await Pocket.create(pocketData, { transaction: t });
-    return result;
+    let addonMessage = ''
+    // Create Pocket
+    const pocket = await Pocket.create(pocketData, { transaction: t });
+
+    // Add creator as PocketMember
+    await PocketMember.create({
+      user_id: owner.id,
+      pocket_id: pocket.id,
+      role: 'owner',
+      contribution_amount: 0,
+      joined_at: new Date(),
+      is_active: 1
+    }, { transaction: t });
+
+    await t.commit();
+
+    // Notify invited friends
+    addonMessage = 'Pocket creation and invite friend success'
+    mongoDb.setCollection('invitationStatus');
+    try {
+      for (const member of additionalMembers) {
+        const inviteData = await mongoDb.insertOne({
+          type: 'pocket_invite',
+          inviterUserId: owner.id,
+          invitedUserId: member.user_id,
+          pocketId: pocket.id,
+          status: 'pending',
+          created_at: new Date(),
+          updated_at: new Date()
+        })
+
+        // Send notification will be here
+        const pushToken = await notificationModules.getPushToken(member.user_id);
+        const notifMessage = notificationModules.setNotificationData({
+          pushToken,
+          title: `Invitation to pocket ${pocket.name} from ${owner.name}`,
+          body: `${owner.name} has been invite you to pocket ${pocket.name}, you could accept or reject it`,
+          data: {
+            invite_id: inviteData.data._id,
+            // Fill the rest later
+          }
+        })
+
+        await notificationModules.pushNotification(notifMessage);
+      }
+    } catch (error) {
+      addonMessage = 'Pocket creation success but some or all invite friend failed'
+    }
+
+
+    return pocket, addonMessage;
   } catch (error) {
-    console.log(error);
+    await t.rollback();
+    logger.error(error);
     throw new InternalServerError(error.message);
   }
 };
@@ -33,7 +87,7 @@ module.exports.detailPocket = async (pocketId, userId) => {
     if (!isMember) {
       throw new ForbiddenError("You do not have access to this pocket");
     }
-    
+
     const data = await Pocket.findOne({
       where: { id: pocketId },
       attributes: [
@@ -82,7 +136,7 @@ module.exports.detailPocket = async (pocketId, userId) => {
       user_role = data.pocketMembers[0].role;
     }
 
-    const {pocketMembers, ...pocketDetails} = data.get({ plain: true });
+    const { pocketMembers, ...pocketDetails } = data.get({ plain: true });
 
     const result = {
       ...pocketDetails,
@@ -170,7 +224,7 @@ module.exports.updatePocket = async (pocketId, userId, updateData) => {
     });
 
     const member = await PocketMember.findOne({
-      where: {pocket_id: pocketId, user_id: userId}
+      where: { pocket_id: pocketId, user_id: userId }
     })
 
     if (!pocket && !member) {
@@ -190,7 +244,7 @@ module.exports.updatePocket = async (pocketId, userId, updateData) => {
   }
 };
 
-module.exports.deletePocket = async (userId,pocketId) => {
+module.exports.deletePocket = async (userId, pocketId) => {
   try {
     const pocket = await Pocket.findByPk(pocketId);
     if (!pocket) {
@@ -276,35 +330,40 @@ module.exports.validateNoSelfAsMember = (membersFromRequest, userId) => {
 };
 
 module.exports.getMembersOfPocket = async (pocketId, userId) => {
-  // Cek apakah userId merupakan anggota dari pocket
-  const isMember = await PocketMember.findOne({
-    where: {
-      pocket_id: pocketId,
-      user_id: userId,
-    },
-  });
-
-  if (!isMember) {
-    throw new ForbiddenError("You do not have access to this pocket");
-  }
-
-  // Ambil semua member dari pocket
-  const members = await PocketMember.findAll({
-    where: { pocket_id: pocketId },
-    include: [
-      {
-        model: User,
-        as: "members",
-        attributes: ["id", "name", "phone_number"],
+  try {
+    // Cek apakah userId merupakan anggota dari pocket
+    const isMember = await PocketMember.findOne({
+      where: {
+        pocket_id: pocketId,
+        user_id: userId,
       },
-    ],
-  });
+    });
 
-  if (!members || members.length === 0) {
-    throw new NotFoundError("No members found for this pocket");
+    if (!isMember) {
+      throw new ForbiddenError("You do not have access to this pocket");
+    }
+
+    // Ambil semua member dari pocket
+    const members = await PocketMember.findAll({
+      where: { pocket_id: pocketId },
+      include: [
+        {
+          model: User,
+          as: "members",
+          attributes: ["id", "name", "phone_number"],
+        },
+      ],
+    });
+
+    if (!members || members.length === 0) {
+      throw new NotFoundError("No members found for this pocket");
+    }
+
+    return members;
+  } catch (error) {
+    logger.error(error);
+    throw new InternalServerError(error.message);
   }
-
-  return members;
 };
 
 module.exports.deletePocketMember = async (pocketId, userId, memberList) => {
@@ -349,7 +408,6 @@ module.exports.deletePocketMember = async (pocketId, userId, memberList) => {
 
 module.exports.leavePocket = async (pocketId, userId) => {
   try {
-
     // Check if the user is a member of the pocket
     const isMember = await PocketMember.findAll({
       where: {
@@ -364,12 +422,13 @@ module.exports.leavePocket = async (pocketId, userId) => {
       },
     })
 
-    if(member.role === "owner") {
+    if (member.role === "owner") {
       throw new BadRequestError("Can't Leave before all members are removed");
     }
 
   } catch (error) {
-    
+    logger.error(error);
+    throw new InternalServerError(error.message);
   }
 }
 

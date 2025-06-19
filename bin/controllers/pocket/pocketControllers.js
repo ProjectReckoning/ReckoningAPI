@@ -1,78 +1,44 @@
 const wrapper = require("../../helpers/utils/wrapper");
 const pocketModules = require("../../modules/pocket/pocketModules");
 const logger = require("../../helpers/utils/logger");
-const { sequelize } = require("../../models");
 const { getCurrentMonth } = require("../../helpers/utils/dateFormatter");
-const pocket = require("../../models/pocket");
 
 module.exports.createPocket = async (req, res) => {
-  const t = await sequelize.transaction();
-  try {
-    const accountNumber = await pocketModules.generateUniqueAccountNumber();
+  const accountNumber = await pocketModules.generateUniqueAccountNumber();
 
-    const membersFromRequest = req.body.members || [];
+  const membersFromRequest = req.body.members || [];
 
-    pocketModules.validateNoSelfAsMember(membersFromRequest, req.userData.id);
+  const pocketData = {
+    name: req.body.name,
+    type: req.body.type,
+    target_nominal: parseFloat(req.body.target_nominal),
+    current_balance: 0,
+    deadline: req.body.deadline ? new Date(req.body.deadline) : null,
+    status: req.body.status,
+    owner_user_id: req.userData.id,
+    icon_name: req.body.icon_name,
+    color_hex: req.body.color_hex,
+    account_number: accountNumber,
+  };
 
-    const pocketData = {
-      name: req.body.name,
-      type: req.body.type,
-      target_nominal: parseFloat(req.body.target_nominal),
-      current_balance: parseFloat(req.body.target_nominal),
-      deadline: req.body.deadline ? new Date(req.body.deadline) : null,
-      status: req.body.status,
-      owner_user_id: req.userData.id,
-      icon_name: req.body.icon_name,
-      color_hex: req.body.color_hex,
-      account_number: accountNumber,
-    };
+  const owner = req.userData;
 
-    const pocket = await pocketModules.createPocket(pocketData, t);
+  const additionalMembers = membersFromRequest.map((member) => ({
+    user_id: member.user_id,
+    role: member.role || "viewer",
+  }));
 
-    // Owner sebagai member utama
-    const ownerMember = {
-      pocket_id: pocket.id,
-      user_id: req.userData.id,
-      role: "owner",
-    };
+  // const allMembers = [owner, ...additionalMembers];
 
-    const additionalMembers = membersFromRequest.map((member) => ({
-      pocket_id: pocket.id,
-      user_id: member.user_id,
-      role: member.role || "viewer",
-    }));
-
-    const allMembers = [ownerMember, ...additionalMembers];
-
-    const addedMembers = await pocketModules.bulkAddMembersToPocket(
-      allMembers,
-      t
-    );
-
-    await t.commit();
-
-    logger.info("Pocket created and members added successfully");
-    return wrapper.response(
-      res,
-      "success",
-      wrapper.data({
-        pocket,
-        members: addedMembers,
-      }),
-      "Pocket and members created successfully",
-      201
-    );
-  } catch (error) {
-    await t.rollback();
-    logger.error("Error creating pocket and members", error);
-    return wrapper.response(
-      res,
-      "fail",
-      wrapper.error(error),
-      `Error creating pocket. ${error.message}`,
-      400
-    );
-  }
+  pocketModules.createPocket(pocketData, owner, additionalMembers)
+    .then((resp, message) => {
+      logger.info('Pocket creation success');
+      wrapper.response(res, 'success', wrapper.data(resp), message, 201);
+    })
+    .catch(err => {
+      logger.error('Error while creating pocket', err);
+      wrapper.response(res, 'fail', wrapper.error(err), `Error while creating pocket. Error: ${err}`, 400);
+    });
 };
 
 module.exports.getUserPocket = (req, res) => {
@@ -188,7 +154,7 @@ module.exports.deletePocket = (req, res) => {
   const { pocketId } = req.params;
   const userId = req.userData.id;
   pocketModules
-    .deletePocket(userId,pocketId)
+    .deletePocket(userId, pocketId)
     .then((resp) => {
       logger.info("Pocket deleted successfully");
       wrapper.response(

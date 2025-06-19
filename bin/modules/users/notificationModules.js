@@ -27,6 +27,8 @@ module.exports.registerPushToken = async (notifData) => {
       throw new NotFoundError('User not found');
     }
 
+    notifData.timestamp = new Date();
+
     const result = await mongoDb.insertOne(notifData);
 
     return {
