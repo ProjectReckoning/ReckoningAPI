@@ -199,7 +199,7 @@ module.exports.deletePocket = (req, res) => {
 // All about the members of the pocket
 module.exports.addMembersToPocket = (req, res) => {
   const { pocketId } = req.params;
-  const userId = req.userData.id;
+  const userData = req.userData;
   const memberData = req.body.members;
 
   if (!Array.isArray(memberData)) {
@@ -219,7 +219,7 @@ module.exports.addMembersToPocket = (req, res) => {
   }));
 
   pocketModules
-    .bulkAddMembersToPocket(memberDataArray)
+    .bulkAddMembersToPocket(userData, pocketId, memberDataArray)
     .then((addedMembers) => {
       logger.info("Members added to pocket successfully");
       return wrapper.response(

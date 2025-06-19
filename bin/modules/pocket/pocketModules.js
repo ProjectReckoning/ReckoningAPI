@@ -374,10 +374,16 @@ module.exports.deletePocket = async (userId, pocketId) => {
   }
 };
 
-module.exports.bulkAddMembersToPocket = async (memberDataArray, t) => {
+module.exports.bulkAddMembersToPocket = async (userData, pocketId, memberDataArray) => {
   try {
-    const pocketId = memberDataArray[0]?.pocket_id;
     const userIds = memberDataArray.map((m) => m.user_id);
+
+    // Check if pocket exist
+    const pocket = await Pocket.findByPk(pocketId)
+
+    if (!pocket) {
+      throw new NotFoundError('Pocket not found');
+    }
 
     // Cek siapa yang sudah jadi member di pocket ini
     const existingMembers = await PocketMember.findAll({
@@ -395,20 +401,52 @@ module.exports.bulkAddMembersToPocket = async (memberDataArray, t) => {
     );
 
     if (newMembers.length === 0) {
-      throw new Error("All users are already members of this pocket");
+      throw new ConflictError("All users are already members of this pocket");
     }
 
-    const added = await PocketMember.bulkCreate(newMembers, {
-      validate: true,
-      transaction: t,
-    });
+    mongoDb.setCollection('invitationStatus');
+    try {
+      await Promise.all(newMembers.map(async (member) => {
+        const inviteData = await mongoDb.insertOne({
+          type: 'pocket_invite',
+          inviterUserId: userData.id,
+          invitedUserId: member.user_id,
+          pocketId: member.pocket_id,
+          status: 'pending',
+          created_at: new Date(),
+          updated_at: new Date()
+        })
+
+        // Send notification will be here
+        const pushToken = await notificationModules.getPushToken(member.user_id);
+        const notifMessage = notificationModules.setNotificationData({
+          pushToken,
+          title: `Invitation to pocket ${pocket.name} from ${userData.name}`,
+          body: `${userData.name} has been invite you to pocket ${pocket.name}, you could accept or reject it`,
+          data: {
+            invite_id: inviteData.data._id,
+            // Fill the rest later
+          }
+        })
+
+        await notificationModules.pushNotification(notifMessage);
+      }))
+    } catch (error) {
+      addonMessage = 'Pocket creation success but some or all invite friend failed'
+    }
 
     return {
-      message: "Members added successfully",
-      members: added,
+      members: newMembers,
       skipped: existingMembers,
     };
   } catch (error) {
+    logger.error(error);
+    if (
+      error instanceof ConflictError ||
+      error instanceof NotFoundError
+    ) {
+      throw error;
+    }
     throw new InternalServerError(error.message);
   }
 };
