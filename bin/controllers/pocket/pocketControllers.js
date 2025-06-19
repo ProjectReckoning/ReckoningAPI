@@ -41,6 +41,25 @@ module.exports.createPocket = async (req, res) => {
     });
 };
 
+module.exports.respondInvite = async (req, res) => {
+  const respondData = {
+    inviteId: req.body.inviteId,
+    respose: req.body.respose? req.body.response : 'pending',
+  }
+
+  const userData = req.userData;
+
+  pocketModules.respondInvite(userData, respondData)
+    .then(resp => {
+      logger.info('User has respond the invitation');
+      wrapper.response(res, 'success', wrapper.data(resp.member), resp.message, 201);
+    })
+    .catch(err => {
+      logger.error('Error while user respond the invitation', err);
+      wrapper.response(res, 'fail', wrapper.error(err), `Error while user respond the invitation. Error: ${err}`, 401);
+    });
+}
+
 module.exports.getUserPocket = (req, res) => {
   pocketModules
     .getUserPockets(req.userData.id)

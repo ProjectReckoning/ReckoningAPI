@@ -3,6 +3,7 @@ const {
   NotFoundError,
   BadRequestError,
   ForbiddenError,
+  ConflictError,
 } = require("../../helpers/error");
 const { Pocket, PocketMember, User, sequelize } = require("../../models");
 const logger = require("../../helpers/utils/logger");
@@ -13,6 +14,7 @@ const config = require('../../config');
 const MongoDb = require('../../config/database/mongodb/db');
 const mongoDb = new MongoDb(config.get('/mongoDbUrl'));
 const notificationModules = require('../users/notificationModules');
+const { ObjectId } = require("mongodb");
 
 module.exports.createPocket = async (pocketData, owner, additionalMembers) => {
   const t = await sequelize.transaction();
@@ -74,6 +76,100 @@ module.exports.createPocket = async (pocketData, owner, additionalMembers) => {
     throw new InternalServerError(error.message);
   }
 };
+
+module.exports.respondInvite = async (userData, responseData) => {
+  const t = await sequelize.transaction();
+  try {
+    mongoDb.setCollection('invitationStatus');
+    const invitation = await mongoDb.findOne({
+      _id: ObjectId(responseData.inviteId)
+    });
+
+    if (!invitation.data || invitation.err) {
+      throw new NotFoundError('Invitation not found');
+    }
+
+    if (invitation.data.invitedUserId != userData.id) {
+      throw new ConflictError('This is not an invitation for this user');
+    }
+
+    if (invitation.data.status !== 'pending') {
+      throw new ConflictError('User already responded to this invitiation')
+    }
+
+    const pocketMember = await PocketMember.findOne({
+      where: {
+        user_id: invitation.data.invitedUserId,
+        pocket_id: invitation.data.pocketId
+      }
+    });
+
+    if (pocketMember) {
+      throw new ConflictError('User already in the pocket');
+    }
+
+    const result = {
+      message: 'User has respond the invitation',
+    }
+
+    // Add user as PocketMember
+    if (responseData.response === 'accepted') {
+      const member = await PocketMember.create({
+        user_id: invitation.data.invitedUserId,
+        pocket_id: invitation.data.pocketId,
+        role: 'viewer',
+        contribution_amount: 0,
+        joined_at: new Date(),
+        is_active: 1
+      }, { transaction: t });
+
+      result.message = 'User has respond the invitation. Response: ACCEPTED';
+      result.member = member;
+    }
+
+    await t.commit();
+
+    await mongoDb.upsertOne({
+      _id: ObjectId(responseData.inviteId)
+    }, {
+      $set: {
+        status: responseData.response,
+        updated_at: new Date()
+      }
+    })
+
+    try {
+      // Send notification will be here
+      const pushToken = await notificationModules.getPushToken(invitation.data.inviterUserId);
+      const notifMessage = notificationModules.setNotificationData({
+        pushToken,
+        title: `${userData.name} already ${responseData.response} your invitation`,
+        body: ``,
+        data: {
+          invite_id: inviteData.data._id,
+          // Fill the rest later
+        }
+      })
+
+      await notificationModules.pushNotification(notifMessage);
+    } catch (error) {
+      logger.error('Notification failed to send');
+    }
+
+    return result;
+  } catch (error) {
+    logger.error(error);
+    await t.rollback()
+    if (
+      error instanceof BadRequestError ||
+      error instanceof NotFoundError ||
+      error instanceof ConflictError
+    ) {
+      throw error;
+    }
+    throw new InternalServerError(error.message);
+  }
+}
 
 module.exports.detailPocket = async (pocketId, userId) => {
   try {

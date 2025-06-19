@@ -461,6 +461,78 @@ paths:
           description: Bad request
         "401":
           description: Unauthorized
+  
+  /pocket/respond-invite:
+    post:
+      summary: Respond to a pocket invitation
+      tags:
+        - Pocket
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - inviteId
+                - response
+              properties:
+                inviteId:
+                  type: string
+                  example: "666f1e3b2b1a4c001e8b4567"
+                response:
+                  type: string
+                  enum: [accepted, rejected]
+                  example: accepted
+      responses:
+        "201":
+          description: Invitation response processed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      user_id:
+                        type: integer
+                        example: 3
+                      pocket_id:
+                        type: integer
+                        example: 8
+                      role:
+                        type: string
+                        example: viewer
+                      contribution_amount:
+                        type: number
+                        example: 0
+                      joined_at:
+                        type: string
+                        format: date-time
+                        example: 2025-06-19T10:00:00.000Z
+                      is_active:
+                        type: boolean
+                        example: true
+                  message:
+                    type: string
+                    example: 'User has respond the invitation. Response: ACCEPTED'
+                  code:
+                    type: integer
+                    example: 201
+        "400":
+          description: Bad request
+        "401":
+          description: Unauthorized
+        "404":
+          description: Invitation not found
+        "409":
+          description: Conflict (already responded or already a member)
 
   /pocket/{id}:
     get:

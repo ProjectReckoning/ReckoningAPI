@@ -31,6 +31,8 @@ router.get("/", userAuth.authenticateToken, pocketController.getUserPocket);
 // Route create pocket
 router.post("/", userAuth.authenticateToken, pocketController.createPocket);
 
+router.post('/respond-invite', userAuth.authenticateToken, pocketController.respondInvite);
+
 // Route get pocket detail
 router.get(
   "/:pocketId",
