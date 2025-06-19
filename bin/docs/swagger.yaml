@@ -1062,7 +1062,7 @@ paths:
                     items:
                       type: object
                       properties:
-                        created_at:
+                        createdAt:
                           type: string
                           format: date-time
                           example: "2025-06-17T02:10:53.934Z"
@@ -1091,13 +1091,13 @@ paths:
               example:
                 ok: true
                 data:
-                  - created_at: "2025-06-17T02:10:53.934Z"
+                  - createdAt: "2025-06-17T02:10:53.934Z"
                     initiator_user: "John Doe"
                     type: Contribution
                     amount: 100000
                     purpose: "Monthly saving"
                     transaction_type: 1
-                  - created_at: "2025-06-16T10:00:00.000Z"
+                  - createdAt: "2025-06-16T10:00:00.000Z"
                     initiator_user: "Jane Smith"
                     type: Payment
                     amount: 50000

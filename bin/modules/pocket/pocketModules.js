@@ -660,11 +660,11 @@ module.exports.getPocketHistory = async (pocketId, month) => {
     const history = await Transaction.findAll({
       where: {
         pocket_id: pocketId,
-        created_at: {
+        createdAt: {
           [Op.between]: [startDate, endDate],
         },
       },
-      order: [["created_at", "DESC"]],
+      order: [["createdAt", "DESC"]],
     });
 
     const groupedHistory = {};
@@ -673,7 +673,7 @@ module.exports.getPocketHistory = async (pocketId, month) => {
     // const outgoingTypes = ["Withdrawal", "Payment"]; // not used actually
 
     history.forEach((tx) => {
-      const dateKey = tx.created_at.toISOString().split("T")[0];
+      const dateKey = tx.createdAt.toISOString().split("T")[0];
 
       const isIncoming = incomingTypes.includes(tx.type);
       const transactionType = isIncoming ? 1 : 0;
@@ -811,7 +811,7 @@ module.exports.getBusinessPocketTransactionHistory = async (userId, { pocketId =
     });
 
     return transactions.map(tx => ({
-      created_at: tx.createdAt,
+      createdAt: tx.createdAt,
       initiator_user: tx.initiator ? tx.initiator.name : null,
       type: tx.type,
       amount: tx.amount,
