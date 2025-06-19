@@ -802,7 +802,7 @@ module.exports.getLast5BusinessTransactionsForUser = async (userId, pocketId = n
 
 module.exports.getBusinessPocketTransactionHistory = async (userId, { pocketId = null, duration = '30d' } = {}) => {
   try {
-    const incomeTypes = ["Contribution", "AutoTopUp", "AutoRecurring", "income"];
+    const incomeTypes = ["Contribution", "AutoTopUp", "AutoRecurring", "Income", "Topup"];
 
     const pocketWhere = { type: 'business' };
     if (pocketId) {

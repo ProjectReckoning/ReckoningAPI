@@ -101,7 +101,7 @@ module.exports = {
       ],
       {}
     );
-    
+
 
     // 4. Insert Transactions
     await queryInterface.bulkInsert(
@@ -111,7 +111,7 @@ module.exports = {
           id: "21",
           pocket_id: "5",
           initiator_user_id: "6",
-          type: "income",
+          type: "Contribution",
           amount: 6000000,
           purpose: "Modal awal bisnis donat",
           status: "completed",
@@ -124,7 +124,7 @@ module.exports = {
           id: "22",
           pocket_id: "5",
           initiator_user_id: "7",
-          type: "income",
+          type: "Contribution",
           amount: 4000000,
           purpose: "Investasi partner 1",
           status: "completed",
@@ -137,7 +137,7 @@ module.exports = {
           id: "23",
           pocket_id: "5",
           initiator_user_id: "8",
-          type: "income",
+          type: "Contribution",
           amount: 2500000,
           purpose: "Investasi partner 2",
           status: "completed",
@@ -150,7 +150,7 @@ module.exports = {
           id: "24",
           pocket_id: "5",
           initiator_user_id: "6",
-          type: "expense",
+          type: "Expense",
           amount: 3000000,
           purpose: "Pembelian peralatan dapur",
           status: "completed",
@@ -163,7 +163,7 @@ module.exports = {
           id: "25",
           pocket_id: "5",
           initiator_user_id: "6",
-          type: "expense",
+          type: "Expense",
           amount: 1500000,
           purpose: "Belanja bahan baku",
           status: "completed",
@@ -176,7 +176,7 @@ module.exports = {
           id: "26",
           pocket_id: "5",
           initiator_user_id: "6",
-          type: "income",
+          type: "Income",
           amount: 2000000,
           purpose: "Penjualan batch 1",
           status: "completed",
@@ -189,7 +189,7 @@ module.exports = {
           id: "27",
           pocket_id: "5",
           initiator_user_id: "7",
-          type: "income",
+          type: "Income",
           amount: 1500000,
           purpose: "Penjualan batch 2",
           status: "completed",
@@ -202,7 +202,7 @@ module.exports = {
           id: "28",
           pocket_id: "5",
           initiator_user_id: "8",
-          type: "expense",
+          type: "Expense",
           amount: 1000000,
           purpose: "Marketing digital",
           status: "completed",
@@ -215,7 +215,7 @@ module.exports = {
           id: "29",
           pocket_id: "5",
           initiator_user_id: "6",
-          type: "income",
+          type: "Income",
           amount: 2000000,
           purpose: "Penjualan batch 3",
           status: "completed",
@@ -228,7 +228,7 @@ module.exports = {
           id: "30",
           pocket_id: "5",
           initiator_user_id: "7",
-          type: "expense",
+          type: "Expense",
           amount: 500000,
           purpose: "Operasional harian",
           status: "completed",
@@ -236,7 +236,7 @@ module.exports = {
           is_business_expense: true,
           createdAt: new Date("2024-02-25"),
           updatedAt: new Date("2024-02-25"),
-        },
+        }
       ],
       {}
     );
