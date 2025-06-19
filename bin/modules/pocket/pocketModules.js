@@ -104,6 +104,8 @@ module.exports.respondInvite = async (userData, responseData) => {
       }
     });
 
+    const pocket = await Pocket.findByPk(invitation.data.pocketId);
+
     if (pocketMember) {
       throw new ConflictError('User already in the pocket');
     }
@@ -112,12 +114,17 @@ module.exports.respondInvite = async (userData, responseData) => {
       message: 'User has respond the invitation',
     }
 
+    let role = 'viewer';
+    if (pocket.type == 'business') {
+      role = 'spender';
+    }
+
     // Add user as PocketMember
     if (responseData.response === 'accepted') {
       const member = await PocketMember.create({
         user_id: invitation.data.invitedUserId,
         pocket_id: invitation.data.pocketId,
-        role: 'viewer',
+        role: role,
         contribution_amount: 0,
         joined_at: new Date(),
         is_active: 1
