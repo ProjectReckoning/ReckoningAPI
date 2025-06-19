@@ -37,7 +37,17 @@ module.exports = (sequelize, DataTypes) => {
     },
     pocket_id: DataTypes.INTEGER,
     initiator_user_id: DataTypes.INTEGER,
-    type: DataTypes.ENUM('income', 'expense', 'transfer'),
+    type: DataTypes.ENUM(
+      'Contribution',
+      'Withdrawal',
+      'Payment',
+      'AutoTopUp',
+      'AutoRecurring',
+      'Topup',
+      'Transfer',
+      'Income',
+      'Expense'
+    ),
     amount: DataTypes.DECIMAL,
     purpose: DataTypes.STRING,
     status: DataTypes.STRING,
