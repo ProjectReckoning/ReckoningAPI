@@ -2,6 +2,7 @@
 
 module.exports = {
   async up(queryInterface, Sequelize) {
+    const getRandomAmount = (min, max) => Math.floor(Math.random() * (max - min + 1) + min);
     await queryInterface.bulkInsert('Transactions', [
       {
         id: '1',
