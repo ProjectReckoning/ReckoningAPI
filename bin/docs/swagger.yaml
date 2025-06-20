@@ -1346,6 +1346,108 @@ paths:
         "400":
           description: Balance to withdraw is over your contribution or bad request
 
+  /transaction/set-auto-budget/{pocketId}:
+    post:
+      summary: Set auto budget for a pocket
+      tags:
+        - Transaction
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: pocketId
+          required: true
+          schema:
+            type: integer
+          description: ID of the pocket to set auto budget for
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - recurring_amount
+                - schedule_type
+                - schedule_value
+              properties:
+                recurring_amount:
+                  type: number
+                  example: 100000
+                schedule_type:
+                  type: string
+                  enum: [weekly, monthly]
+                  example: weekly
+                  description: Type of schedule (weekly or monthly)
+                schedule_value:
+                  type: integer
+                  example: 2
+                  description: For weekly, 1=Monday, 7=Sunday. For monthly, 1-28 (day of month).
+                status:
+                  type: string
+                  example: active
+                  description: "Status of the auto budget (default: active)"
+      responses:
+        "200":
+          description: Auto budget set successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      id:
+                        type: integer
+                        example: 1
+                      user_id:
+                        type: integer
+                        example: 2
+                      pocket_id:
+                        type: integer
+                        example: 4
+                      recurring_amount:
+                        type: number
+                        example: 100000
+                      schedule_type:
+                        type: string
+                        example: weekly
+                      schedule_value:
+                        type: integer
+                        example: 2
+                      next_run_date:
+                        type: string
+                        format: date-time
+                        example: 2025-07-01T03:00:00.000Z
+                      status:
+                        type: string
+                        example: active
+                      is_active:
+                        type: boolean
+                        example: true
+                      createdAt:
+                        type: string
+                        format: date-time
+                        example: 2025-06-21T10:00:00.000Z
+                      updatedAt:
+                        type: string
+                        format: date-time
+                        example: 2025-06-21T10:00:00.000Z
+                  message:
+                    type: string
+                    example: Success set auto budget
+                  code:
+                    type: integer
+                    example: 200
+        "400":
+          description: Bad request
+        "401":
+          description: Unauthorized
+
 components:
   securitySchemes:
     bearerAuth:

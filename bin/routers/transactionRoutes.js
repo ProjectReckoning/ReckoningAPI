@@ -10,4 +10,7 @@ router.post('/topup', userAuth.authenticateToken, transactionController.initTopU
 // Withdrawal
 router.post('/withdraw', userAuth.authenticateToken, transactionController.initWithdraw);
 
+// AutoBudget
+router.post('/set-auto-budget/:pocketId', userAuth.authenticateToken, transactionController.setAutoBudget);
+
 module.exports = router;
