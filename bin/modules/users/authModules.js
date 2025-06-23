@@ -3,7 +3,7 @@ const { InternalServerError, ConflictError, NotFoundError, UnauthorizedError } =
 const bcrypt = require('bcrypt');
 const config = require('../../config');
 const SALT_ROUNDS = process.env.SALT_ROUNDS;
-const { User, MockSavingsAccount } = require('../../models');
+const { User, MockSavingsAccount, sequelize } = require('../../models');
 const jwt = require('jsonwebtoken');
 const { generateUniqueAccountNumber } = require('../pocket/pocketModules');
 
