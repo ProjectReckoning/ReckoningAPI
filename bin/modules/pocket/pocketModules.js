@@ -5,7 +5,7 @@ const {
   ForbiddenError,
   ConflictError,
 } = require("../../helpers/error");
-const { Pocket, PocketMember, User, sequelize } = require("../../models");
+const { Pocket, PocketMember, User, sequelize, MockSavingsAccount } = require("../../models");
 const logger = require("../../helpers/utils/logger");
 const { where, Op } = require("sequelize");
 const { Transaction } = require("../../models");
