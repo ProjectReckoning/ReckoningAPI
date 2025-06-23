@@ -752,6 +752,15 @@ module.exports.getPocketHistory = async (pocketId, month) => {
     const startDate = startOfMonth(new Date(month));
     const endDate = endOfMonth(new Date(month));
 
+    // 0. Get pocket to check if it's a business type
+    const pocket = await Pocket.findByPk(pocketId);
+    if (!pocket) {
+      throw new Error("Pocket not found");
+    }
+
+    const incomingTypes = ["Contribution", "AutoTopUp", "AutoRecurring"];
+
+    // 1. Get transactions within the month
     const history = await Transaction.findAll({
       where: {
         pocket_id: pocketId,
@@ -762,14 +771,12 @@ module.exports.getPocketHistory = async (pocketId, month) => {
       order: [["createdAt", "DESC"]],
     });
 
+    let pemasukan = 0;
+    let pengeluaran = 0;
     const groupedHistory = {};
-
-    const incomingTypes = ["Contribution", "AutoTopUp", "AutoRecurring"];
-    // const outgoingTypes = ["Withdrawal", "Payment"]; // not used actually
 
     history.forEach((tx) => {
       const dateKey = tx.createdAt.toISOString().split("T")[0];
-
       const isIncoming = incomingTypes.includes(tx.type);
       const transactionType = isIncoming ? 1 : 0;
 
@@ -786,6 +793,12 @@ module.exports.getPocketHistory = async (pocketId, month) => {
         groupedHistory[dateKey] = [];
       }
       groupedHistory[dateKey].push(mappedTx);
+
+      if (isIncoming) {
+        pemasukan += tx.amount;
+      } else {
+        pengeluaran += tx.amount;
+      }
     });
 
     const result = Object.keys(groupedHistory)
@@ -795,7 +808,36 @@ module.exports.getPocketHistory = async (pocketId, month) => {
         transactions: groupedHistory[date],
       }));
 
-    return result;
+    // If NOT business type, return only daily transactions
+    if (pocket.type !== "business") {
+      return result;
+    }
+
+    // 2. If business type, calculate saldoKemarin
+    const previousTransactions = await Transaction.findAll({
+      where: {
+        pocket_id: pocketId,
+        createdAt: {
+          [Op.lt]: startDate,
+        },
+      },
+    });
+
+    let saldoKemarin = 0;
+    previousTransactions.forEach((tx) => {
+      const isIncoming = incomingTypes.includes(tx.type);
+      saldoKemarin += isIncoming ? tx.amount : -tx.amount;
+    });
+
+    const saldoPenutupan = saldoKemarin + pemasukan - pengeluaran;
+
+    return {
+      saldoKemarin,
+      saldoPenutupan,
+      pemasukan,
+      pengeluaran,
+      transaksi: result,
+    };
   } catch (error) {
     logger.error(error.message);
     throw new InternalServerError(error.message);
