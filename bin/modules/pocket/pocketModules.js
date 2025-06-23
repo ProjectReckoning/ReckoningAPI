@@ -80,6 +80,52 @@ module.exports.createPocket = async (pocketData, owner, additionalMembers) => {
   }
 };
 
+module.exports.inviteMember = async (userData, additionalMembers, pocketId) => {
+  try {
+    const pocket = await Pocket.findByPk(pocketId);
+    if (Array.isArray(additionalMembers) && additionalMembers.length > 0) {
+      mongoDb.setCollection('invitationStatus');
+      try {
+        for (const member of additionalMembers) {
+          const inviteData = await mongoDb.insertOne({
+            type: 'pocket_invite',
+            inviterUserId: userData.id,
+            invitedUserId: member.user_id,
+            pocketId: pocket.id,
+            status: 'pending',
+            created_at: new Date(),
+            updated_at: new Date()
+          })
+
+          // Send notification will be here
+          const pushToken = await notificationModules.getPushToken(member.user_id);
+          const notifMessage = notificationModules.setNotificationData({
+            pushToken,
+            title: `Invitation to pocket ${pocket.name} from ${userData.name}`,
+            body: `${userData.name} has been invite you to pocket ${pocket.name}, you could accept or reject it`,
+            data: {
+              invite_id: inviteData.data._id,
+              // Fill the rest later
+            }
+          })
+
+          await notificationModules.pushNotification(notifMessage);
+        }
+        addonMessage = 'Invite friend success';
+      } catch (error) {
+        logger.warn('Notification or invite failed', error);
+        addonMessage = 'Some or all invite friend failed'
+      }
+    }
+
+    return { inviteData, addonMessage };
+  } catch (error) {
+    await t.rollback();
+    logger.error(error);
+    throw new InternalServerError(error.message);
+  }
+}
+
 module.exports.respondInvite = async (userData, responseData) => {
   const t = await sequelize.transaction();
   try {

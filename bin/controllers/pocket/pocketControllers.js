@@ -58,6 +58,28 @@ module.exports.respondInvite = async (req, res) => {
       logger.error('Error while user respond the invitation', err);
       wrapper.response(res, 'fail', wrapper.error(err), `Error while user respond the invitation. Error: ${err}`, 401);
     });
+};
+
+module.exports.inviteMember = async (req, res) => {
+  const userData = req.userData;
+  const pocketId = req.body.pocketId;
+
+  const membersFromRequest = req.body.members || [];
+
+  const additionalMembers = membersFromRequest.map((member) => ({
+    user_id: member.user_id,
+    role: member.role || "viewer",
+  }));
+
+  pocketModules.inviteMember(userData, additionalMembers, pocketId)
+    .then(resp => {
+      logger.info('Invitation has been sent');
+      wrapper.response(res, 'success', wrapper.data(resp.inviteData), resp.message, 201);
+    })
+    .catch(err => {
+      logger.error('Error while sending the invitation', err);
+      wrapper.response(res, 'fail', wrapper.error(err), `Error while sending the invitation. Error: ${err}`, 401);
+    });
 }
 
 module.exports.getUserPocket = (req, res) => {

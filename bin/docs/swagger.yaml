@@ -283,6 +283,77 @@ paths:
         "404":
           description: User's mock saving account not found
 
+  /pocket/invite:
+    post:
+      summary: Invite members to a pocket
+      tags:
+        - Pocket
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - pocket_id
+                - members
+              properties:
+                pocket_id:
+                  type: integer
+                  example: 2
+                members:
+                  type: array
+                  description: List of members to invite
+                  items:
+                    type: object
+                    required:
+                      - user_id
+                    properties:
+                      user_id:
+                        type: integer
+                        example: 3
+                      role:
+                        type: string
+                        enum: [viewer, admin, spender]
+                        example: viewer
+      responses:
+        "201":
+          description: Invitations sent successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      inviteData:
+                        type: object
+                        description: Invitation data from MongoDB
+                        example:
+                          type: pocket_invite
+                          inviterUserId: 1
+                          invitedUserId: 3
+                          pocketId: 2
+                          status: pending
+                          created_at: 2025-06-21T10:00:00.000Z
+                          updated_at: 2025-06-21T10:00:00.000Z
+                  message:
+                    type: string
+                    example: Invite friend success
+                  code:
+                    type: integer
+                    example: 201
+        "400":
+          description: Bad request
+        "401":
+          description: Unauthorized
+
   /pocket:
     get:
       summary: Get all user pockets
