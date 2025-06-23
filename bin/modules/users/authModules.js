@@ -131,11 +131,17 @@ module.exports.userProfile = async (userData) => {
       }
     });
 
-    if (!user) {
+    const mock = await MockSavingsAccount.findOne({
+      where : {
+        user_id: user.id
+      }
+    });
+
+    if (!user || !mock) {
       throw new NotFoundError('User with that phone number not found');
     }
 
-    return user;
+    return { user, mock };
   } catch (error) {
     logger.error(error);
     if (

@@ -42,11 +42,12 @@ module.exports.userProfile = async (req, res) => {
   const userData = req.userData;
 
   authModules.userProfile(userData)
-    .then(resp => {
+    .then(({ user, mock }) => {
       logger.info('User data has been fetched');
       const result = {
-        name: resp.name,
-        user_id: resp.id
+        name: user.name,
+        user_id: user.id,
+        balance: mock.balance - mock.earmarked_balance
       }
       wrapper.response(res, 'success', wrapper.data(result), 'User data has been fetched', 200);
     })
