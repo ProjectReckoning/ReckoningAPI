@@ -230,7 +230,7 @@ module.exports.executeDirectTransfer = async (userData, transferData, t) => {
       },
       {
         where: {
-          pocket_id: transferData.pocket_id
+          id: transferData.pocket_id
         },
         transaction: t
       }
@@ -295,7 +295,7 @@ module.exports.executeSplitTransfer = async (trxId, transferData, splitResult, t
   await Pocket.increment(
     { current_balance: -transferData.balance },
     {
-      where: { pocket_id: transferData.pocket_id },
+      where: { id: transferData.pocket_id },
       transaction: t
     }
   );
