@@ -1,7 +1,6 @@
-const { Transaction } = require("sequelize");
 const { BadRequestError, ConflictError, NotFoundError, InternalServerError } = require("../../helpers/error");
 const logger = require("../../helpers/utils/logger");
-const { User, Pocket, PocketMember, MockSavingsAccount, TransactionApproval, sequelize } = require("../../models");
+const { User, Pocket, PocketMember, MockSavingsAccount, TransactionApproval, Transaction, sequelize } = require("../../models");
 const config = require('../../config');
 const MongoDb = require('../../config/database/mongodb/db');
 const mongoDb = new MongoDb(config.get('/mongoDbUrl'));
