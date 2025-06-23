@@ -34,42 +34,45 @@ module.exports.createPocket = async (pocketData, owner, additionalMembers) => {
     }, { transaction: t });
 
     await t.commit();
+    addonMessage = 'Pocket creation success'
 
     // Notify invited friends
-    addonMessage = 'Pocket creation and invite friend success'
-    mongoDb.setCollection('invitationStatus');
-    try {
-      for (const member of additionalMembers) {
-        const inviteData = await mongoDb.insertOne({
-          type: 'pocket_invite',
-          inviterUserId: owner.id,
-          invitedUserId: member.user_id,
-          pocketId: pocket.id,
-          status: 'pending',
-          created_at: new Date(),
-          updated_at: new Date()
-        })
+    if (Array.isArray(additionalMembers) && additionalMembers.length > 0) {
+      mongoDb.setCollection('invitationStatus');
+      try {
+        for (const member of additionalMembers) {
+          const inviteData = await mongoDb.insertOne({
+            type: 'pocket_invite',
+            inviterUserId: owner.id,
+            invitedUserId: member.user_id,
+            pocketId: pocket.id,
+            status: 'pending',
+            created_at: new Date(),
+            updated_at: new Date()
+          })
 
-        // Send notification will be here
-        const pushToken = await notificationModules.getPushToken(member.user_id);
-        const notifMessage = notificationModules.setNotificationData({
-          pushToken,
-          title: `Invitation to pocket ${pocket.name} from ${owner.name}`,
-          body: `${owner.name} has been invite you to pocket ${pocket.name}, you could accept or reject it`,
-          data: {
-            invite_id: inviteData.data._id,
-            // Fill the rest later
-          }
-        })
+          // Send notification will be here
+          const pushToken = await notificationModules.getPushToken(member.user_id);
+          const notifMessage = notificationModules.setNotificationData({
+            pushToken,
+            title: `Invitation to pocket ${pocket.name} from ${owner.name}`,
+            body: `${owner.name} has been invite you to pocket ${pocket.name}, you could accept or reject it`,
+            data: {
+              invite_id: inviteData.data._id,
+              // Fill the rest later
+            }
+          })
 
-        await notificationModules.pushNotification(notifMessage);
+          await notificationModules.pushNotification(notifMessage);
+        }
+        addonMessage = 'Pocket creation and invite friend success';
+      } catch (error) {
+        logger.warn('Notification or invite failed', error);
+        addonMessage = 'Pocket creation success but some or all invite friend failed'
       }
-    } catch (error) {
-      addonMessage = 'Pocket creation success but some or all invite friend failed'
     }
 
-
-    return pocket, addonMessage;
+    return { pocket, addonMessage };
   } catch (error) {
     await t.rollback();
     logger.error(error);

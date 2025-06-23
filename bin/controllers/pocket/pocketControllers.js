@@ -31,9 +31,9 @@ module.exports.createPocket = async (req, res) => {
   // const allMembers = [owner, ...additionalMembers];
 
   pocketModules.createPocket(pocketData, owner, additionalMembers)
-    .then((resp, message) => {
+    .then(({ pocket, message }) => {
       logger.info('Pocket creation success');
-      wrapper.response(res, 'success', wrapper.data(resp), message, 201);
+      wrapper.response(res, 'success', wrapper.data(pocket), message, 201);
     })
     .catch(err => {
       logger.error('Error while creating pocket', err);
@@ -44,7 +44,7 @@ module.exports.createPocket = async (req, res) => {
 module.exports.respondInvite = async (req, res) => {
   const respondData = {
     inviteId: req.body.inviteId,
-    respose: req.body.respose? req.body.response : 'pending',
+    respose: req.body.respose ? req.body.response : 'pending',
   }
 
   const userData = req.userData;
