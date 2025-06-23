@@ -63,7 +63,7 @@ module.exports.respondInvite = async (req, res) => {
 module.exports.getUserPocket = (req, res) => {
   pocketModules
     .getUserPockets(req.userData.id)
-    .then((resp) => {
+    .then(({ resp, owner }) => {
       const pocketMap = new Map();
       resp.forEach((item) => {
         if (!pocketMap.has(item.name)) {

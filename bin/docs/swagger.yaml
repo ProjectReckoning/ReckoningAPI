@@ -571,7 +571,7 @@ paths:
           schema:
             type: integer
           description: ID of the pocket to fetch
-          example: 8
+          example: 2
       responses:
         "200":
           description: Pocket detail fetched successfully
@@ -580,116 +580,135 @@ paths:
               schema:
                 type: object
                 properties:
-                  ok:
-                    type: boolean
-                    example: true
-                  data:
+                  id:
+                    type: integer
+                    example: 2
+                  name:
+                    type: string
+                    example: Patungan Laptop Gaming
+                  type:
+                    type: string
+                    example: saving
+                  target_nominal:
+                    type: string
+                    example: "15000000"
+                  current_balance:
+                    type: string
+                    example: "8500000"
+                  deadline:
+                    type: string
+                    format: date-time
+                    example: 2024-08-15T00:00:00.000Z
+                  status:
+                    type: string
+                    example: active
+                  icon_name:
+                    type: string
+                    example: laptop
+                  color_hex:
+                    type: string
+                    example: "#4ECDC4"
+                  account_number:
+                    type: string
+                    example: PKT001234567891
+                  owner_user_id:
+                    type: integer
+                    example: 2
+                  owner:
                     type: object
                     properties:
                       id:
                         type: integer
-                        example: 8
+                        example: 2
                       name:
                         type: string
-                        example: Donat Bahagia
-                      type:
+                        example: Siti Nurhaliza
+                      phone_number:
                         type: string
-                        example: business
-                      target_nominal:
-                        type: string
-                        example: "1000000"
-                      current_balance:
-                        type: string
-                        example: "1000000"
-                      deadline:
-                        type: string
-                        format: date-time
-                        example: 2025-12-31T00:00:00.000Z
-                      status:
-                        type: string
-                        example: active
-                      icon_name:
-                        type: string
-                        example: flight_takeoff
-                      color_hex:
-                        type: string
-                        example: "#00BCD4"
-                      account_number:
-                        type: string
-                        example: "648946893"
-                      owner_user_id:
-                        type: integer
-                        example: 2
-                      owner:
+                        example: "6281234567891"
+                      PocketMember:
                         type: object
                         properties:
                           id:
                             type: integer
                             example: 2
-                          name:
+                          user_id:
+                            type: integer
+                            example: 2
+                          pocket_id:
+                            type: integer
+                            example: 2
+                          role:
                             type: string
-                            example: Siti Nurhaliza
-                          phone_number:
+                            example: owner
+                          contribution_amount:
                             type: string
-                            example: "6281234567891"
-                      members:
-                        type: array
-                        items:
+                            example: "3000000"
+                          joined_at:
+                            type: string
+                            format: date-time
+                            example: 2025-06-18T01:58:55.705Z
+                          is_active:
+                            type: boolean
+                            example: true
+                          createdAt:
+                            type: string
+                            format: date-time
+                            example: 2025-06-18T01:58:55.705Z
+                          updatedAt:
+                            type: string
+                            format: date-time
+                            example: 2025-06-18T01:58:55.705Z
+                  members:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: integer
+                          example: 1
+                        name:
+                          type: string
+                          example: Ahmad Rizki
+                        phone_number:
+                          type: string
+                          example: "6281234567890"
+                        PocketMember:
                           type: object
                           properties:
                             id:
                               type: integer
                               example: 3
-                            name:
+                            user_id:
+                              type: integer
+                              example: 1
+                            pocket_id:
+                              type: integer
+                              example: 2
+                            role:
                               type: string
-                              example: Budi Santoso
-                            phone_number:
+                              example: viewer
+                            contribution_amount:
                               type: string
-                              example: "6281234567892"
-                            PocketMember:
-                              type: object
-                              properties:
-                                id:
-                                  type: integer
-                                  example: 15
-                                user_id:
-                                  type: integer
-                                  example: 3
-                                pocket_id:
-                                  type: integer
-                                  example: 8
-                                role:
-                                  type: string
-                                  example: admin
-                                contribution_amount:
-                                  type: string
-                                  nullable: true
-                                  example: null
-                                joined_at:
-                                  type: string
-                                  nullable: true
-                                  example: null
-                                is_active:
-                                  type: boolean
-                                  nullable: true
-                                  example: null
-                                createdAt:
-                                  type: string
-                                  format: date-time
-                                  example: 2025-06-16T06:52:27.702Z
-                                updatedAt:
-                                  type: string
-                                  format: date-time
-                                  example: 2025-06-16T08:41:50.579Z
-                      user_role:
-                        type: string
-                        example: owner
-                  message:
+                              example: "2500000"
+                            joined_at:
+                              type: string
+                              format: date-time
+                              example: 2025-06-18T01:58:55.705Z
+                            is_active:
+                              type: boolean
+                              example: true
+                            createdAt:
+                              type: string
+                              format: date-time
+                              example: 2025-06-18T01:58:55.705Z
+                            updatedAt:
+                              type: string
+                              format: date-time
+                              example: 2025-06-18T01:58:55.705Z
+                  user_role:
                     type: string
-                    example: Pocket detail fetched successfully
-                  code:
-                    type: integer
-                    example: 200
+                    example: owner
 
     patch:
       summary: Update pocket by ID

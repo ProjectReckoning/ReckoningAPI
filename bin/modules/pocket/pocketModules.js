@@ -188,7 +188,7 @@ module.exports.detailPocket = async (pocketId, userId) => {
         pocket_id: pocketId,
         user_id: userId,
       }
-    })
+    });
 
     if (!isMember) {
       throw new ForbiddenError("You do not have access to this pocket");
@@ -213,40 +213,87 @@ module.exports.detailPocket = async (pocketId, userId) => {
         {
           model: PocketMember,
           as: "pocketMembers",
-          where: { user_id: userId },
-          attributes: ["role"],
           required: false,
-        },
-        {
-          model: User,
-          as: "owner",
-          attributes: ["id", "name", "phone_number"],
-        },
-        {
-          model: User,
-          as: "members",
-          attributes: ["id", "name", "phone_number"],
-        },
-      ],
+          include: [
+            {
+              model: User,
+              as: "members",
+              attributes: ["id", "name", "phone_number"],
+              required: false
+            }
+          ]
+        }
+      ]
     });
-
-    console.log("Detail Pocket Data:", data);
 
     if (!data) return null;
 
-    // Tentukan user_role: jika dia member ambil dari PocketMember, kalau bukan, cek apakah owner
-    let user_role = 'viewer'; // fallback
-    if (data.owner_user_id === userId) {
+    const plainData = data.get({ plain: true });
+
+    // Determine user_role
+    let user_role = 'viewer';
+    const selfMember = plainData.pocketMembers.find(m => m.user_id === userId);
+    if (plainData.owner_user_id === userId) {
       user_role = 'owner';
-    } else if (data.pocketMembers?.length) {
-      user_role = data.pocketMembers[0].role;
+    } else if (selfMember) {
+      user_role = selfMember.role;
     }
 
-    const { pocketMembers, ...pocketDetails } = data.get({ plain: true });
+    // Extract owner and other members
+    const ownerMember = plainData.pocketMembers.find(m => m.user_id === plainData.owner_user_id);
+    const otherMembers = plainData.pocketMembers
+      .filter(m => m.user_id !== plainData.owner_user_id)
+      .map(m => ({
+        id: m.members?.id ?? null,
+        name: m.members?.name ?? null,
+        phone_number: m.members?.phone_number ?? null,
+        PocketMember: {
+          id: m.id,
+          user_id: m.user_id,
+          pocket_id: m.pocket_id,
+          role: m.role,
+          contribution_amount: m.contribution_amount,
+          joined_at: m.joined_at,
+          is_active: m.is_active,
+          createdAt: m.createdAt,
+          updatedAt: m.updatedAt
+        }
+      }));
+
+    const owner = ownerMember ? {
+      id: ownerMember.members?.id ?? null,
+      name: ownerMember.members?.name ?? null,
+      phone_number: ownerMember.members?.phone_number ?? null,
+      PocketMember: {
+        id: ownerMember.id,
+        user_id: ownerMember.user_id,
+        pocket_id: ownerMember.pocket_id,
+        role: ownerMember.role,
+        contribution_amount: ownerMember.contribution_amount,
+        joined_at: ownerMember.joined_at,
+        is_active: ownerMember.is_active,
+        createdAt: ownerMember.createdAt,
+        updatedAt: ownerMember.updatedAt
+      }
+    } : null;
 
     const result = {
-      ...pocketDetails,
-      user_role,
+      id: plainData.id,
+      name: plainData.name,
+      type: plainData.type,
+      target_nominal: plainData.target_nominal,
+      current_balance: plainData.current_balance,
+      deadline: plainData.deadline,
+      status: plainData.status,
+      icon_name: plainData.icon_name,
+      color_hex: plainData.color_hex,
+      account_number: plainData.account_number,
+      owner_user_id: plainData.owner_user_id,
+
+      // Final result
+      owner,
+      members: otherMembers,
+      user_role
     };
 
     return result;
