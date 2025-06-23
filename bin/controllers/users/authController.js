@@ -45,7 +45,8 @@ module.exports.userProfile = async (req, res) => {
     .then(resp => {
       logger.info('User data has been fetched');
       const result = {
-        name: resp.name
+        name: resp.name,
+        user_id: resp.id
       }
       wrapper.response(res, 'success', wrapper.data(result), 'User data has been fetched', 200);
     })

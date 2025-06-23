@@ -79,6 +79,29 @@ paths:
       responses:
         "200":
           description: User profile data
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      name:
+                        type: string
+                        example: John Doe
+                      user_id:
+                        type: integer
+                        example: 1
+                  message:
+                    type: string
+                    example: User data has been fetched
+                  code:
+                    type: integer
+                    example: 200
         "401":
           description: Unauthorized
 
