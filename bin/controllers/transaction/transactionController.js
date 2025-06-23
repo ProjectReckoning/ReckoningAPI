@@ -3,6 +3,7 @@ const wrapper = require('../../helpers/utils/wrapper');
 const topupModules = require('../../modules/transaction/topupModules');
 const withdrawModules = require('../../modules/transaction/withdrawModules');
 const autoBudgetModules = require('../../modules/transaction/autoBudgetModules');
+const transferModules = require('../../modules/transaction/transferModules');
 
 module.exports.initTopUp = async (req, res) => {
   const userData = req.userData;
@@ -60,5 +61,43 @@ module.exports.setAutoBudget = async (req, res) => {
     .catch(err => {
       logger.error('Error while set the auto budget', err);
       wrapper.response(res, 'fail', wrapper.error(err), `Error while set the auto budget. Error: ${err}`, 400);
+    });
+}
+
+module.exports.initTransfer = async (req, res) => {
+  const userData = req.userData;
+  const transferData = {
+    balance: parseFloat(req.body.balance),
+    pocket_id: req.body.pocket_id,
+    destination: req.body.destination,
+    description: req.body.description,
+  }
+
+  transferModules.initTransfer(userData, transferData)
+    .then(resp => {
+      logger.info('Transfer from pocket success');
+      wrapper.response(res, 'success', wrapper.data(resp), 'Transfer from pocket success', 200);
+    })
+    .catch(err => {
+      logger.error('Error while transfer from pocket', err);
+      wrapper.response(res, 'fail', wrapper.error(err), `Error while transfer from pocket. Error: ${err}`, 400);
+    });
+}
+
+module.exports.respondTransfer = async (req, res) => {
+  const userData = req.userData;
+  const approvalData = {
+    status: req.body.status,
+    transactionId: req.params.transactionId,
+  }
+
+  transferModules.respondTransfer(userData, approvalData)
+    .then(({ result, message}) => {
+      logger.info('User has been respond the approval for transation');
+      wrapper.response(res, 'success', wrapper.data(result), `User has been respond the approval for transation. ${message}`, 200);
+    })
+    .catch(err => {
+      logger.error('Error while respond the transaction', err);
+      wrapper.response(res, 'fail', wrapper.error(err), `Error while respond the transaction. Error: ${err}`, 400);
     });
 }

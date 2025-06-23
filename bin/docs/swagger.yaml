@@ -461,7 +461,7 @@ paths:
           description: Bad request
         "401":
           description: Unauthorized
-  
+
   /pocket/respond-invite:
     post:
       summary: Respond to a pocket invitation
@@ -521,7 +521,7 @@ paths:
                         example: true
                   message:
                     type: string
-                    example: 'User has respond the invitation. Response: ACCEPTED'
+                    example: "User has respond the invitation. Response: ACCEPTED"
                   code:
                     type: integer
                     example: 201
@@ -1447,6 +1447,201 @@ paths:
           description: Bad request
         "401":
           description: Unauthorized
+
+  /transaction/transfer:
+    post:
+      summary: Transfer from a pocket to a destination account (with approval if needed)
+      tags:
+        - Transaction
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - balance
+                - pocket_id
+                - destination
+              properties:
+                balance:
+                  type: number
+                  example: 50000
+                pocket_id:
+                  type: integer
+                  example: 4
+                destination:
+                  type: string
+                  example: "REKENING SESEORANG"
+                description:
+                  type: string
+                  example: "Pembayaran ke vendor"
+      responses:
+        "200":
+          description: Transfer from pocket success (may require approval)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      id:
+                        type: integer
+                        example: 555
+                      pocket_id:
+                        type: integer
+                        example: 4
+                      initiator_user_id:
+                        type: integer
+                        example: 2
+                      type:
+                        type: string
+                        example: Transfer
+                      amount:
+                        type: number
+                        example: 50000
+                      purpose:
+                        type: string
+                        example: Transfer ke [REKENING SESEORANG]
+                      status:
+                        type: string
+                        example: pending
+                      description:
+                        type: string
+                        example: Pembayaran ke vendor
+                      is_business_expense:
+                        type: boolean
+                        example: false
+                      createdAt:
+                        type: string
+                        format: date-time
+                        example: 2025-06-21T10:00:00.000Z
+                      updatedAt:
+                        type: string
+                        format: date-time
+                        example: 2025-06-21T10:00:00.000Z
+                      splitData:
+                        type: array
+                        description: Only present if approval is required (split transfer)
+                        items:
+                          type: object
+                          properties:
+                            user_id:
+                              type: integer
+                              example: 3
+                            amount:
+                              type: number
+                              example: 25000
+                  message:
+                    type: string
+                    example: Transfer from pocket success
+                  code:
+                    type: integer
+                    example: 200
+        "400":
+          description: Bad request or unable to distribute full transfer amount across members
+        "401":
+          description: Unauthorized
+        "404":
+          description: User/Pocket not found or user is not a member of that pocket
+
+  /transaction/transfer/{transactionId}:
+    patch:
+      summary: Respond to a transfer approval request
+      tags:
+        - Transaction
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: transactionId
+          required: true
+          schema:
+            type: integer
+          description: ID of the transaction to respond to
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - status
+              properties:
+                status:
+                  type: string
+                  enum: [accepted, rejected]
+                  example: accepted
+      responses:
+        "200":
+          description: Approval response processed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      id:
+                        type: integer
+                        example: 555
+                      pocket_id:
+                        type: integer
+                        example: 4
+                      initiator_user_id:
+                        type: integer
+                        example: 2
+                      type:
+                        type: string
+                        example: Transfer
+                      amount:
+                        type: number
+                        example: 50000
+                      purpose:
+                        type: string
+                        example: Transfer ke [REKENING SESEORANG]
+                      status:
+                        type: string
+                        example: completed
+                      description:
+                        type: string
+                        example: Pembayaran ke vendor
+                      is_business_expense:
+                        type: boolean
+                        example: false
+                      createdAt:
+                        type: string
+                        format: date-time
+                        example: 2025-06-21T10:00:00.000Z
+                      updatedAt:
+                        type: string
+                        format: date-time
+                        example: 2025-06-21T10:00:00.000Z
+                  message:
+                    type: string
+                    example: User has responded with accepted, and transfer has been done.
+                  code:
+                    type: integer
+                    example: 200
+        "400":
+          description: Bad request or already responded
+        "401":
+          description: Unauthorized
+        "404":
+          description: Transaction or approval data not found
+        "409":
+          description: Conflict (already processed or not authorized)
 
 components:
   securitySchemes:
