@@ -36,7 +36,7 @@ module.exports.sendFriendshipRequest = async (req, res) => {
 module.exports.handleFriendshipRequest = async (req, res) => {
     const receiverUserId = req.userData.id;
     const { requestId } = req.params;
-    const { action } = req.query; // e.g. /friendship/123?action=accept
+    const action  = req.body.action; 
 
     try {
         const result = await friendshipModules.handleFriendshipAction(

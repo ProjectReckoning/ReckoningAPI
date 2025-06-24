@@ -2,6 +2,7 @@ const wrapper = require("../../helpers/utils/wrapper");
 const pocketModules = require("../../modules/pocket/pocketModules");
 const logger = require("../../helpers/utils/logger");
 const { getCurrentMonth } = require("../../helpers/utils/dateFormatter");
+const { BadRequestError } = require("../../helpers/error");
 
 module.exports.createPocket = async (req, res) => {
   const accountNumber = await pocketModules.generateUniqueAccountNumber();
@@ -294,17 +295,29 @@ module.exports.getMembersOfPocket = (req, res) => {
 };
 
 module.exports.deletePocketMember = (req, res) => {
-  const { pocketId, memberId } = req.params;
+  const { pocketId } = req.params;
+  const members  = req.body.members; 
   const userId = req.userData.id;
 
+  // Validasi members
+  if (!Array.isArray(members) || !members.every(Number.isInteger)) {
+    return wrapper.response(
+      res,
+      "fail",
+      wrapper.error(new BadRequestError('Field "members" must be an array of integers')),
+      "Field 'members' must be an array of integers",
+      400
+    );
+  }
+
   pocketModules
-    .deletePocketMember(pocketId, memberId, userId)
-    .then(() => {
+    .deletePocketMember(pocketId, userId, members)
+    .then((resp) => {
       logger.info("Pocket member deleted successfully");
       return wrapper.response(
         res,
         "success",
-        null,
+        wrapper.data(resp),
         "Pocket member deleted successfully",
         200
       );
@@ -321,12 +334,13 @@ module.exports.deletePocketMember = (req, res) => {
     });
 };
 
+
 module.exports.updateRolePocketMember = async (req, res) => {
   try {
     const pocketId = parseInt(req.params.pocketId);
-    const memberId = parseInt(req.params.memberId);
-    const userId = req.userData.id;
+    const memberId = req.body.user_id;
     const newRole = req.body.role;
+    const userId = req.userData.id;
 
     const result = await pocketModules.updateRolePocketMember(
       pocketId,

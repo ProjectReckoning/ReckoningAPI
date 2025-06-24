@@ -105,7 +105,9 @@ module.exports.handleFriendshipAction = async (
       throw new ForbiddenError("You are not authorized to perform this action");
     }
 
-    if (action === "accept") {
+    normalizedAction = action.toLowerCase();
+
+    if (normalizedAction === "accept") {
       if (request.status === "accepted") {
         throw new ForbiddenError("Friendship already accepted");
       }
@@ -120,7 +122,7 @@ module.exports.handleFriendshipAction = async (
       };
     }
 
-    if (action === "reject") {
+    if (normalizedAction === "reject") {
       await request.destroy();
       return {
         message: "Friendship request rejected and deleted",
