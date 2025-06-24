@@ -25,6 +25,9 @@ router.get('/business/:pocketId/history', userAuth.authenticateToken, pocketBusi
 
 router.get('/business/:pocketId/bep', userAuth.authenticateToken, pocketBusinessController.getBEP);
 
+router.get('/business/stats', userAuth.authenticateToken, pocketBusinessController.getAllBusinessStats);
+router.get('/business/:pocketId/stats', userAuth.authenticateToken, pocketBusinessController.getPocketBusinessStats);
+
 // KEPERLUAN POCKET BIASA SETELAH INI
 
 // Route get all pockets

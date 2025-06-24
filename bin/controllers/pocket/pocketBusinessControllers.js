@@ -114,3 +114,34 @@ module.exports.getBEP = async (req, res) => {
       return wrapper.response(res, 'fail', wrapper.error(error), `Error while fetching pocket's BEP statistic. Error: ${error.message}`, 400);
     })
 }
+
+module.exports.getAllBusinessStats = async (req, res) => {
+  const userId = req.userData.id;
+  const { type } = req.query;
+
+  pocketModules.getAllBusinessStats(userId, type)
+    .then(resp => {
+      logger.info("User's pockets statistic has been fetched");
+      return wrapper.response(res, 'success', wrapper.data(resp), "User's pockets's statistic has been fetched", 200);
+    })
+    .catch(error => {
+      logger.error("Error while fetching user's pockets statistic", error);
+      return wrapper.response(res, 'fail', wrapper.error(error), `Error while fetching user's pockets statistic. Error: ${error.message}`, 400);
+    })
+}
+
+module.exports.getPocketBusinessStats = async (req, res) => {
+  const { pocketId } = req.params;
+  const { type } = req.query;
+  const userId = req.userData.id;
+
+  pocketModules.getPocketBusinessStats(userId, type, pocketId)
+    .then(resp => {
+      logger.info("Pocket's statistic has been fetched");
+      return wrapper.response(res, 'success', wrapper.data(resp), "Pocket's statistic has been fetched", 200);
+    })
+    .catch(error => {
+      logger.error("Error while fetching pocket's statistic.", error);
+      return wrapper.response(res, 'fail', wrapper.error(error), `Error while fetching pocket's statistic. Error: ${error.message}`, 400);
+    })
+}
