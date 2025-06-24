@@ -9,9 +9,9 @@ module.exports.registerPushToken = async (req, res) => {
   };
 
   notificationModule.registerPushToken(notifData)
-    .then(resp => {
-      logger.info(resp.message);
-      wrapper.response(res, 'success', wrapper.data(resp.result), resp.message, 201);
+    .then(({ result, message }) => {
+      logger.info(message);
+      wrapper.response(res, 'success', wrapper.data(result), message, 201);
     })
     .catch(err => {
       logger.error('Error while registering the push token', err);

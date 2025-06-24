@@ -126,12 +126,15 @@ paths:
                   example: "ExponentPushToken[xxxxxxxxxxxxxxxxxxxxxx]"
       responses:
         "201":
-          description: Push token registered successfully
+          description: Push token registered or updated successfully
           content:
             application/json:
               schema:
                 type: object
                 properties:
+                  ok:
+                    type: boolean
+                    example: true
                   data:
                     type: object
                     properties:
@@ -140,19 +143,44 @@ paths:
                         example: 2
                       expoPushToken:
                         type: string
-                        example: thisistoken
+                        example: ExponentPushToken[xxxxxxxxxxxxxxxxxxxxxx]
                       _id:
                         type: string
                         example: thisisidfrommongo
                   message:
                     type: string
-                    example: Push token registered successfully
-              example:
-                data:
-                  userId: 2
-                  expoPushToken: thisistoken
-                  _id: thisisidfrommongo
-                message: Push token registered successfully
+                    example: Push token successfully registered
+                  code:
+                    type: integer
+                    example: 201
+              examples:
+                registered:
+                  value:
+                    ok: true
+                    data:
+                      userId: 2
+                      expoPushToken: ExponentPushToken[xxxxxxxxxxxxxxxxxxxxxx]
+                      _id: thisisidfrommongo
+                    message: Push token successfully registered
+                    code: 201
+                updated:
+                  value:
+                    ok: true
+                    data:
+                      userId: 2
+                      expoPushToken: ExponentPushToken[xxxxxxxxxxxxxxxxxxxxxx]
+                      _id: thisisidfrommongo
+                    message: Push token successfully updated
+                    code: 201
+                alreadyRegistered:
+                  value:
+                    ok: true
+                    data:
+                      userId: 2
+                      expoPushToken: ExponentPushToken[xxxxxxxxxxxxxxxxxxxxxx]
+                      _id: thisisidfrommongo
+                    message: Push token already registered
+                    code: 201
         "400":
           description: Bad request
         "401":

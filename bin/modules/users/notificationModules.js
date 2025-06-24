@@ -6,17 +6,31 @@ const mongoDb = new MongoDb(config.get('/mongoDbUrl'));
 const authModules = require('./authModules');
 const { NotFoundError, InternalServerError } = require('../../helpers/error');
 const { Expo } = require('expo-server-sdk');
+const { ObjectId } = require('mongodb');
 const expo = new Expo();
 
 module.exports.registerPushToken = async (notifData) => {
   try {
     mongoDb.setCollection('usersToken');
 
-    const recordSet = await mongoDb.findOne(notifData);
+    const recordSet = await mongoDb.findOne(notifData.userId);
     if (recordSet && recordSet.data?.expoPushToken === notifData.expoPushToken) {
       return {
-        recordSet,
+        result: recordSet.data,
         message: "Push token already registered"
+      }
+    }
+
+    if (recordSet && recordSet.data?.expoPushToken !== notifData.expoPushToken) {
+      const result = await mongoDb.upsertOne({
+        _id: ObjectId(recordSet.data._id)
+      }, {
+        expoPushToken: notifData.expoPushToken
+      })
+
+      return {
+        result: result.data,
+        message: 'Push token succesfully updated'
       }
     }
 
