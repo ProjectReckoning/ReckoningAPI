@@ -269,11 +269,34 @@ module.exports.detailPocket = async (pocketId, userId) => {
               required: false
             }
           ]
-        }
+        },
       ]
     });
 
     if (!data) return null;
+
+    const history = await Transaction.findAll({
+      where: { pocket_id: pocketId },
+      order: [["createdAt", "DESC"]],
+    });
+
+    // Check income and outcome
+    let pemasukan = 0;
+    let pengeluaran = 0;
+
+    history.forEach((tx) => {
+      tx.transaction_type = ['Contribution', 'Payment', 'Income', 'AutoTopUp', 'AutoRecurring', 'Topup'].includes(tx.type) ? 1 : 0;
+      tx.is_business_expense = tx.is_business_expense || false;
+      tx.amount = parseFloat(tx.amount) || 0;;
+      if (tx.transaction_type === 1) {
+        pemasukan += tx.amount;
+      } else {
+        pengeluaran += tx.amount;
+      }
+    })
+
+    pemasukan = pemasukan.toString();
+    pengeluaran = pengeluaran.toString();
 
     const plainData = data.get({ plain: true });
 
@@ -285,6 +308,13 @@ module.exports.detailPocket = async (pocketId, userId) => {
     } else if (selfMember) {
       user_role = selfMember.role;
     }
+
+    // how many members in this pocket
+    const memberCount = plainData.pocketMembers.length;
+    let targetNominalMember = Math.floor(plainData.target_nominal / memberCount / 1000) * 1000;
+    targetNominalMember = targetNominalMember.toString();
+    // to string
+    
 
     // Extract owner and other members
     const ownerMember = plainData.pocketMembers.find(m => m.user_id === plainData.owner_user_id);
@@ -300,6 +330,7 @@ module.exports.detailPocket = async (pocketId, userId) => {
           pocket_id: m.pocket_id,
           role: m.role,
           contribution_amount: m.contribution_amount,
+          target_amount: targetNominalMember,
           joined_at: m.joined_at,
           is_active: m.is_active,
           createdAt: m.createdAt,
@@ -340,7 +371,9 @@ module.exports.detailPocket = async (pocketId, userId) => {
       // Final result
       owner,
       members: otherMembers,
-      user_role
+      user_role,
+      income: pemasukan,
+      outcome: pengeluaran,
     };
 
     return result;
