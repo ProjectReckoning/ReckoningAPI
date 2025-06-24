@@ -1824,6 +1824,314 @@ paths:
         "404":
           description: Pocket not found
 
+  /pocket/{pocketId}/members:
+    get:
+      summary: Get members of a pocket
+      tags:
+        - Pocket Member Management
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: pocketId
+          required: true
+          schema:
+            type: integer
+          description: ID of the pocket
+          example: 6
+      responses:
+        "200":
+          description: Members of pocket fetched successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                    example: true
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: integer
+                          example: 10
+                        user_id:
+                          type: integer
+                          example: 6
+                        pocket_id:
+                          type: integer
+                          example: 6
+                        role:
+                          type: string
+                          enum: [owner, admin, spender, viewer]
+                          example: owner
+                        contribution_amount:
+                          type: string
+                          example: "6000000"
+                        joined_at:
+                          type: string
+                          format: date-time
+                          example: "2025-06-24T14:16:01.459Z"
+                        is_active:
+                          type: boolean
+                          example: true
+                        createdAt:
+                          type: string
+                          format: date-time
+                          example: "2025-06-24T14:16:01.459Z"
+                        updatedAt:
+                          type: string
+                          format: date-time
+                          example: "2025-06-24T14:16:01.459Z"
+                        members:
+                          type: object
+                          properties:
+                            id:
+                              type: integer
+                              example: 6
+                            name:
+                              type: string
+                              example: "Fernando Manallu"
+                            phone_number:
+                              type: string
+                              example: "62811111111"
+                  message:
+                    type: string
+                    example: "Members of pocket fetched successfully"
+                  code:
+                    type: integer
+                    example: 200
+        "401":
+          description: Unauthorized
+        "404":
+          description: Pocket not found
+
+    delete:
+        summary: Delete members from a pocket
+        tags:
+          - Pocket Member Management
+        security:
+          - bearerAuth: []
+        parameters:
+          - in: path
+            name: pocketId
+            required: true
+            schema:
+              type: integer
+            description: ID of the pocket
+            example: 6
+        requestBody:
+          required: true
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - members
+                properties:
+                  members:
+                    type: array
+                    items:
+                      type: integer
+                    example: [8, 2, 3]
+                    description: Array of user IDs to delete from pocket
+        responses:
+          "200":
+            description: Pocket member deleted successfully
+            content:
+              application/json:
+                schema:
+                  type: object
+                  properties:
+                    ok:
+                      type: boolean
+                      example: true
+                    data:
+                      type: object
+                      properties:
+                        message:
+                          type: string
+                          example: "Members deleted successfully"
+                        count:
+                          type: integer
+                          example: 1
+                    message:
+                      type: string
+                      example: "Pocket member deleted successfully"
+                    code:
+                      type: integer
+                      example: 200
+          "401":
+            description: Unauthorized
+          "404":
+            description: Pocket not found
+
+  /pocket/{pocketId}/members/role:
+    patch:
+      summary: Update member role in a pocket
+      tags:
+        - Pocket Member Management
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: pocketId
+          required: true
+          schema:
+            type: integer
+          description: ID of the pocket
+          example: 6
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - user_id
+                - role
+              properties:
+                user_id:
+                  type: integer
+                  example: 7
+                role:
+                  type: string
+                  enum: [owner, admin, spender, viewer]
+                  example: spender
+      responses:
+        "200":
+          description: Member role updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      message:
+                        type: string
+                        example: "Member role updated successfully"
+                      updatedMember:
+                        type: object
+                        properties:
+                          user_id:
+                            type: integer
+                            example: 7
+                          new_role:
+                            type: string
+                            example: spender
+                  message:
+                    type: string
+                    example: "Member role updated successfully"
+                  code:
+                    type: integer
+                    example: 200
+        "401":
+          description: Unauthorized
+        "404":
+          description: Pocket or member not found
+
+
+  /pocket/{pocketId}/members/change-owner:
+    patch:
+      summary: Change pocket owner
+      tags:
+        - Pocket Member Management
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: pocketId
+          required: true
+          schema:
+            type: integer
+          description: ID of the pocket
+          example: 6
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - new_owner_id
+              properties:
+                new_owner_id:
+                  type: integer
+                  example: 7
+      responses:
+        "200":
+          description: Pocket owner changed successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "Pocket owner changed successfully"
+                  code:
+                    type: integer
+                    example: 200
+        "401":
+          description: Unauthorized
+        "404":
+          description: Pocket or new owner not found
+
+
+  /pocket/{pocketId}/leave:
+    delete:
+      summary: Leave a pocket
+      tags:
+        - Pocket Member Management
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: pocketId
+          required: true
+          schema:
+            type: integer
+          description: ID of the pocket to leave
+          example: 6
+      responses:
+        "200":
+          description: Successfully left the pocket
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      message:
+                        type: string
+                        example: "You have left the pocket successfully"
+                  message:
+                    type: string
+                    example: "Successfully left the pocket"
+                  code:
+                    type: integer
+                    example: 200
+        "401":
+          description: Unauthorized
+        "404":
+          description: Pocket not found or user not a member
+
   /friendship:
     get:
       tags:
