@@ -25,7 +25,7 @@ module.exports.registerPushToken = async (notifData) => {
       const result = await mongoDb.upsertOne({
         _id: new ObjectId(recordSet.data._id)
       }, {
-        expoPushToken: notifData.expoPushToken
+        $set: { expoPushToken: notifData.expoPushToken }
       })
 
       return {
