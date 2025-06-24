@@ -1678,6 +1678,152 @@ paths:
         "404":
           description: Pocket not found or user not a member
 
+  /pocket/business/stats:
+    get:
+      summary: Get business pocket statistics overview for the authenticated user
+      tags:
+        - Pocket (Business)
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: type
+          required: true
+          schema:
+            type: string
+            enum: [overview, pemasukan, pengeluaran]
+          description: Type of statistics to fetch (overview, pemasukan, or pengeluaran)
+      responses:
+        "200":
+          description: Business pocket statistics
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                    example: true
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        x:
+                          type: array
+                          items:
+                            type: string
+                          example: ["Jan 2024", "Feb 2024", "Mar 2024"]
+                        label:
+                          type: string
+                          example: Ringkasan
+                        series:
+                          type: object
+                          additionalProperties:
+                            type: object
+                            properties:
+                              data:
+                                type: array
+                                items:
+                                  type: number
+                                example: [100000, 200000, 150000]
+                              color:
+                                type: string
+                                example: "#ff6384"
+                  message:
+                    type: string
+                    example: Business pocket statistics fetched successfully
+                  code:
+                    type: integer
+                    example: 200
+        "400":
+          description: Bad request
+        "401":
+          description: Unauthorized
+
+  /pocket/business/{pocketId}/stats:
+    get:
+      summary: Get statistics for a specific business pocket
+      tags:
+        - Pocket (Business)
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: pocketId
+          required: true
+          schema:
+            type: integer
+          description: ID of the business pocket
+        - in: query
+          name: type
+          required: true
+          schema:
+            type: string
+            enum: [bulanan, tahunan]
+          description: Type of statistics to fetch (bulanan or tahunan)
+      responses:
+        "200":
+          description: Business pocket statistics
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                    example: true
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        x:
+                          type: array
+                          items:
+                            type: string
+                          example: ["Jan 2024", "Feb 2024", "Mar 2024"]
+                        label:
+                          type: string
+                          example: Bulanan
+                        series:
+                          type: object
+                          properties:
+                            pemasukan:
+                              type: object
+                              properties:
+                                data:
+                                  type: array
+                                  items:
+                                    type: number
+                                  example: [100000, 200000, 150000]
+                                color:
+                                  type: string
+                                  example: "#81c784"
+                            pengeluaran:
+                              type: object
+                              properties:
+                                data:
+                                  type: array
+                                  items:
+                                    type: number
+                                  example: [50000, 80000, 60000]
+                                color:
+                                  type: string
+                                  example: "#ff6384"
+                  message:
+                    type: string
+                    example: Business pocket statistics fetched successfully
+                  code:
+                    type: integer
+                    example: 200
+        "400":
+          description: Bad request
+        "401":
+          description: Unauthorized
+        "404":
+          description: Pocket not found
+
   /friendship:
     get:
       tags:
