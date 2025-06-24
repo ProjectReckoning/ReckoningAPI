@@ -1159,3 +1159,205 @@ const analyzeProfitOrLoss = ({
     };
   }
 };
+
+const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+const COLOR_PALETTE = ['#ff6384', '#36a2eb', '#ffce56', '#4bc0c0', '#9575cd', '#81c784', '#ffb74d'];
+
+const groupBy = (items, keyGetter) => {
+  return items.reduce((result, item) => {
+    const key = keyGetter(item);
+    result[key] = result[key] || [];
+    result[key].push(item);
+    return result;
+  }, {});
+};
+
+module.exports.getAllBusinessStats = async (userId, type) => {
+  try {
+    if (type !== 'overview' && type !== 'pemasukan' && type !== 'pengeluaran') {
+      throw new BadRequestError('Unknown type');
+    }
+
+    const earliestTransaction = await Transaction.findOne({
+      where: {
+        initiator_user_id: userId,
+        status: 'completed'
+      },
+      order: [['createdAt', 'ASC']],
+      attributes: ['createdAt']
+    });
+
+    if (!earliestTransaction) return [];
+
+    const daysSinceFirst = (Date.now() - new Date(earliestTransaction.createdAt).getTime()) / (1000 * 60 * 60 * 24);
+
+    if (daysSinceFirst < 7) return [];
+
+    const transactions = await Transaction.findAll({
+      where: {
+        initiator_user_id: userId,
+        status: 'completed'
+      },
+      attributes: ['amount', 'type', 'createdAt', 'pocket_id'],
+      include: [{ model: Pocket, attributes: ['name'] }]
+    });
+
+    if (!transactions.length) return [];
+
+
+    const monthly = groupBy(transactions, trx => {
+      const date = new Date(trx.createdAt);
+      return `${date.getFullYear()}-${date.getMonth()}`; // '2023-0' (Jan)
+    });
+
+    const xLabels = [...new Set(Object.keys(monthly).map(k => {
+      const [y, m] = k.split('-');
+      return `${MONTH_NAMES[parseInt(m)]} ${y}`;
+    }))].sort((a, b) => new Date(a) - new Date(b));
+
+    const series = {};
+
+    for (const trx of transactions) {
+      const date = new Date(trx.createdAt);
+      const monthKey = `${MONTH_NAMES[date.getMonth()]} ${date.getFullYear()}`;
+      const isIncome = trx.type === 'Topup';
+      const isOutcome = trx.type === 'Transfer' || trx.type === 'Withdraw';
+
+      if (
+        (type === 'pemasukan' && !isIncome) ||
+        (type === 'pengeluaran' && !isOutcome)
+      ) continue;
+
+      const labelKey = type === 'overview'
+        ? (isIncome ? 'pemasukan' : 'pengeluaran')
+        : trx.Pocket?.name;
+
+      if (!series[labelKey]) {
+        series[labelKey] = { data: new Array(xLabels.length).fill(0), color: COLOR_PALETTE[Object.keys(series).length % COLOR_PALETTE.length] };
+      }
+
+      const xIndex = xLabels.indexOf(monthKey);
+      if (xIndex >= 0) {
+        series[labelKey].data[xIndex] += trx.amount;
+      }
+    }
+
+    const result = [{
+      x: xLabels,
+      label: type === 'overview' ? 'Ringkasan' : 'Per Pocket',
+      series
+    }]
+    return result;
+  } catch (error) {
+    logger.error(error);
+    if (
+      error instanceof BadRequestError ||
+      error instanceof ConflictError ||
+      error instanceof NotFoundError ||
+      error instanceof UnauthorizedError
+    ) {
+      throw error;
+    }
+    throw new InternalServerError(error.message);
+  }
+}
+
+module.exports.getPocketBusinessStats = async (userId, type, pocketId) => {
+  try {
+    const pocket = await Pocket.findByPk(pocketId);
+    if (!pocket) throw new NotFoundError('Pocket not found');
+
+    const earliestTransaction = await Transaction.findOne({
+      where: {
+        pocket_id: pocketId,
+        initiator_user_id: userId,
+        status: 'completed'
+      },
+      order: [['createdAt', 'ASC']],
+      attributes: ['createdAt']
+    });
+
+    if (!earliestTransaction) return [];
+
+    const daysSinceFirst = (Date.now() - new Date(earliestTransaction.createdAt).getTime()) / (1000 * 60 * 60 * 24);
+
+    if (daysSinceFirst < 7) return [];
+
+    const transactions = await Transaction.findAll({
+      where: {
+        pocket_id: pocketId,
+        initiator_user_id: userId,
+        status: 'completed'
+      },
+      attributes: ['amount', 'type', 'createdAt']
+    });
+
+    if (!transactions.length) return [];
+
+    if (type === 'bulanan') {
+      const monthly = groupBy(transactions, trx => {
+        const date = new Date(trx.createdAt);
+        return `${date.getFullYear()}-${date.getMonth()}`;
+      });
+
+      const xLabels = [...new Set(Object.keys(monthly).map(k => {
+        const [y, m] = k.split('-');
+        return `${MONTH_NAMES[parseInt(m)]} ${y}`;
+      }))].sort((a, b) => new Date(a) - new Date(b));
+
+      const series = {
+        pemasukan: { data: new Array(xLabels.length).fill(0), color: '#81c784' },
+        pengeluaran: { data: new Array(xLabels.length).fill(0), color: '#ff6384' }
+      };
+
+      for (const trx of transactions) {
+        const date = new Date(trx.createdAt);
+        const xIndex = xLabels.indexOf(`${MONTH_NAMES[date.getMonth()]} ${date.getFullYear()}`);
+        if (xIndex < 0) continue;
+
+        if (trx.type === 'Topup') series.pemasukan.data[xIndex] += trx.amount;
+        if (trx.type === 'Transfer' || trx.type === 'Withdraw') series.pengeluaran.data[xIndex] += trx.amount;
+      }
+
+      return [{ x: xLabels, label: 'Bulanan', series }];
+    }
+
+    if (type === 'tahunan') {
+      const yearly = groupBy(transactions, trx => new Date(trx.createdAt).getFullYear());
+
+      const xLabels = Object.keys(yearly).sort();
+      const series = {
+        pemasukan: { data: [], color: '#81c784' },
+        pengeluaran: { data: [], color: '#ff6384' }
+      };
+
+      for (const year of xLabels) {
+        const trans = yearly[year];
+        let income = 0, outcome = 0;
+
+        for (const trx of trans) {
+          if (trx.type === 'Topup') income += trx.amount;
+          if (trx.type === 'Transfer' || trx.type === 'Withdraw') outcome += trx.amount;
+        }
+
+        series.pemasukan.data.push(income);
+        series.pengeluaran.data.push(outcome);
+      }
+
+      return [{ x: xLabels, label: 'Tahunan', series }];
+    }
+
+    return [];
+  } catch (error) {
+    logger.error(error);
+    if (
+      error instanceof BadRequestError ||
+      error instanceof ConflictError ||
+      error instanceof NotFoundError ||
+      error instanceof UnauthorizedError
+    ) {
+      throw error;
+    }
+    throw new InternalServerError(error.message);
+  }
+}
