@@ -1331,6 +1331,36 @@ paths:
                   code:
                     type: integer
                     example: 200
+              examples:
+                profit:
+                  value:
+                    ok: true
+                    data:
+                      status: profit
+                      cleanProfit: 2000000
+                      profitPercentage: 13.33
+                      averageDailyCleanProfit: 50000
+                      estimatedDaysToBEP: 30
+                    message: Pocket's BEP statistic has been fetched
+                    code: 200
+                loss:
+                  value:
+                    ok: true
+                    data:
+                      status: loss
+                      loss: 1000000
+                      averageDailyCleanProfit: -20000
+                      projections:
+                        - increaseRate: "10%"
+                          increasedIncome: 55000
+                          projectedDailyProfit: 5000
+                          estimatedDaysToCoverLoss: 200
+                        - increaseRate: "20%"
+                          increasedIncome: 60000
+                          projectedDailyProfit: 10000
+                          estimatedDaysToCoverLoss: 100
+                    message: Pocket's BEP statistic has been fetched
+                    code: 200
         "400":
           description: Bad request
         "401":
