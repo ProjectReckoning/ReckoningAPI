@@ -13,7 +13,7 @@ module.exports.registerPushToken = async (notifData) => {
   try {
     mongoDb.setCollection('usersToken');
 
-    const recordSet = await mongoDb.findOne(notifData.userId);
+    const recordSet = await mongoDb.findOne({ userId: notifData.userId });
     if (recordSet && recordSet.data?.expoPushToken === notifData.expoPushToken) {
       return {
         result: recordSet.data,
