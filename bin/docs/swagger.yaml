@@ -1251,6 +1251,95 @@ paths:
         "404":
           description: Pocket not found or access denied
 
+  /pocket/business/{pocketId}/bep:
+    get:
+      summary: Get BEP (Break Even Point) statistics for a business pocket
+      tags:
+        - Pocket
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: pocketId
+          required: true
+          schema:
+            type: integer
+          description: ID of the business pocket
+      responses:
+        "200":
+          description: BEP statistics fetched successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                    example: true
+                  data:
+                    oneOf:
+                      - type: object
+                        description: Profit scenario
+                        properties:
+                          status:
+                            type: string
+                            example: profit
+                          cleanProfit:
+                            type: number
+                            example: 2000000
+                          profitPercentage:
+                            type: number
+                            example: 13.33
+                          averageDailyCleanProfit:
+                            type: number
+                            example: 50000
+                          estimatedDaysToBEP:
+                            type: integer
+                            example: 30
+                      - type: object
+                        description: Loss scenario
+                        properties:
+                          status:
+                            type: string
+                            example: loss
+                          loss:
+                            type: number
+                            example: 1000000
+                          averageDailyCleanProfit:
+                            type: number
+                            example: -20000
+                          projections:
+                            type: array
+                            items:
+                              type: object
+                              properties:
+                                increaseRate:
+                                  type: string
+                                  example: "10%"
+                                increasedIncome:
+                                  type: number
+                                  example: 55000
+                                projectedDailyProfit:
+                                  type: number
+                                  example: 5000
+                                estimatedDaysToCoverLoss:
+                                  type: integer
+                                  example: 200
+                  message:
+                    type: string
+                    example: Pocket's BEP statistic has been fetched
+                  code:
+                    type: integer
+                    example: 200
+        "400":
+          description: Bad request
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden (not owner or admin)
+        "404":
+          description: Pocket not found or not a business pocket
+
   /friendship:
     get:
       tags:

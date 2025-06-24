@@ -4,6 +4,7 @@ const {
   BadRequestError,
   ForbiddenError,
   ConflictError,
+  UnauthorizedError,
 } = require("../../helpers/error");
 const { Pocket, PocketMember, User, sequelize, MockSavingsAccount } = require("../../models");
 const logger = require("../../helpers/utils/logger");
@@ -804,7 +805,7 @@ module.exports.getPocketHistory = async (pocketId, month) => {
       throw new Error("Pocket not found");
     }
 
-    const incomingTypes = ["Contribution", "AutoTopUp", "AutoRecurring"];
+    const incomingTypes = ['Contribution', 'Payment', 'Income', 'AutoTopUp', 'AutoRecurring', 'Topup',];
 
     // 1. Get transactions within the month
     const history = await Transaction.findAll({
@@ -892,7 +893,7 @@ module.exports.getPocketHistory = async (pocketId, month) => {
 
 module.exports.getLast5BusinessTransactionsForUser = async (userId, pocketId = null) => {
   try {
-    const incomingTypes = ["Contribution", "AutoTopUp", "AutoRecurring"];
+    const incomingTypes = ['Contribution', 'Payment', 'Income', 'AutoTopUp', 'AutoRecurring', 'Topup',];
 
     // 1. Find business pockets the user is a member of (optionally filter by pocketId)
     const pocketWhere = { type: 'business' };
@@ -1006,3 +1007,155 @@ module.exports.getBusinessPocketTransactionHistory = async (userId, { pocketId =
     throw new InternalServerError(error.message);
   }
 }
+
+module.exports.getBEP = async (userData, pocketId) => {
+  try {
+    const [pocket, incomeHistory, expenseHistory, member] = await Promise.all([
+      Pocket.findOne({
+        where: {
+          pocket_id: pocketId,
+          type: 'business'
+        },
+        raw: true
+      }),
+      Transaction.findAll({
+        where: {
+          pocket_id: pocketId,
+          type: {
+            [Op.in]: ['Payment', 'Income'],
+          }
+        },
+        order: [
+          ['updatedAt', 'DESC'],
+          ['createdAt', 'DESC'],
+        ],
+        raw: true
+      }),
+      Transaction.findAll({
+        where: {
+          pocket_id: pocketId,
+          type: {
+            [Op.in]: ['Withdrawal', 'Transfer', 'Expense'],
+          }
+        },
+        order: [
+          ['updatedAt', 'DESC'],
+          ['createdAt', 'DESC'],
+        ],
+        raw: true
+      }),
+      PocketMember.findOne({
+        where: {
+          pocket_id: pocketId,
+          user_id: userData.id,
+          [Op.or]: [
+            { role: 'owner' },
+            { role: 'admin' }
+          ]
+        },
+        raw: true
+      })
+    ])
+
+    if (!pocket) {
+      throw new ConflictError('Pocket is not business type');
+    }
+
+    if (!member) {
+      throw new UnauthorizedError("You're not an admin or an owner");
+    }
+
+    const result = analyzeProfitOrLoss({
+      modalAwal: pocket.target,
+      incomeHistory,
+      expenseHistory,
+    });
+
+    return result;
+  } catch (error) {
+    logger.error(error);
+    if (
+      error instanceof BadRequestError ||
+      error instanceof ConflictError ||
+      error instanceof NotFoundError ||
+      error instanceof UnauthorizedError
+    ) {
+      throw error;
+    }
+    throw new InternalServerError(error.message);
+  }
+}
+
+const analyzeProfitOrLoss = ({
+  modalAwal,
+  incomeHistory,
+  expenseHistory,
+  lossProjectionRates = [0.1, 0.2]
+}) => {
+  const totalIncome = incomeHistory.reduce((sum, tx) => sum + tx.amount, 0);
+  const totalExpense = expenseHistory.reduce((sum, tx) => sum + tx.amount, 0);
+  const cleanProfit = totalIncome - totalExpense;
+
+  // Group by day for daily clean profit
+  const dateMap = {};
+
+  incomeHistory.forEach(tx => {
+    const date = tx.createdAt.toISOString().slice(0, 10);
+    if (!dateMap[date]) dateMap[date] = { income: 0, expense: 0 };
+    dateMap[date].income += tx.amount;
+  });
+
+  expenseHistory.forEach(tx => {
+    const date = tx.createdAt.toISOString().slice(0, 10);
+    if (!dateMap[date]) dateMap[date] = { income: 0, expense: 0 };
+    dateMap[date].expense += tx.amount;
+  });
+
+  const dailyCleanProfits = Object.values(dateMap).map(
+    ({ income, expense }) => income - expense
+  );
+
+  const averageDailyCleanProfit =
+    dailyCleanProfits.reduce((sum, val) => sum + val, 0) / dailyCleanProfits.length || 0;
+
+  if (cleanProfit >= 0) {
+    const profitPercentage = (cleanProfit / modalAwal) * 100;
+    const daysToReachBEP = modalAwal / averageDailyCleanProfit;
+
+    return {
+      status: 'profit',
+      cleanProfit,
+      profitPercentage: parseFloat(profitPercentage.toFixed(2)),
+      averageDailyCleanProfit: Math.round(averageDailyCleanProfit),
+      estimatedDaysToBEP: Math.ceil(daysToReachBEP)
+    };
+  } else {
+    const loss = -cleanProfit;
+
+    const currentAverageIncome =
+      incomeHistory.reduce((sum, tx) => sum + tx.amount, 0) / dailyCleanProfits.length || 0;
+
+    const projections = lossProjectionRates.map(rate => {
+      const increasedIncome = currentAverageIncome * (1 + rate);
+      const projectedDailyProfit = increasedIncome - (totalExpense / dailyCleanProfits.length || 1);
+
+      const estimatedDays = projectedDailyProfit > 0
+        ? loss / projectedDailyProfit
+        : Infinity;
+
+      return {
+        increaseRate: `${rate * 100}%`,
+        increasedIncome: Math.round(increasedIncome),
+        projectedDailyProfit: Math.round(projectedDailyProfit),
+        estimatedDaysToCoverLoss: Math.ceil(estimatedDays)
+      };
+    });
+
+    return {
+      status: 'loss',
+      loss,
+      averageDailyCleanProfit: Math.round(averageDailyCleanProfit),
+      projections
+    };
+  }
+};

@@ -23,6 +23,8 @@ router.get('/business/last-5', userAuth.authenticateToken, pocketBusinessControl
 router.get('/business/:pocketId/last-5', userAuth.authenticateToken, pocketBusinessController.getLast5BusinessPocketHistory);
 router.get('/business/:pocketId/history', userAuth.authenticateToken, pocketBusinessController.getBusinessPocketTransactionHistory);
 
+router.get('/business/:pocketId/bep', userAuth.authenticateToken, pocketBusinessController.getBEP);
+
 // KEPERLUAN POCKET BIASA SETELAH INI
 
 // Route get all pockets
