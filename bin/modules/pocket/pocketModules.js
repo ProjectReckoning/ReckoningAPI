@@ -132,7 +132,7 @@ module.exports.respondInvite = async (userData, responseData) => {
   try {
     mongoDb.setCollection('invitationStatus');
     const invitation = await mongoDb.findOne({
-      _id: ObjectId(responseData.inviteId)
+      _id: new ObjectId(responseData.inviteId)
     });
 
     if (!invitation.data || invitation.err) {
@@ -187,7 +187,7 @@ module.exports.respondInvite = async (userData, responseData) => {
     await t.commit();
 
     await mongoDb.upsertOne({
-      _id: ObjectId(responseData.inviteId)
+      _id: new ObjectId(responseData.inviteId)
     }, {
       $set: {
         status: responseData.response,
