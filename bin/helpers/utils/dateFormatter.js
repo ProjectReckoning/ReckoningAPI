@@ -52,3 +52,19 @@ module.exports.calculateNextRunDate = (scheduleType, scheduleValue) => {
   // Convert WIB time to UTC to store in DB
   return zonedTimeToUtc(next, TIMEZONE);
 };
+
+module.exports.calculateNextRunDateFromSchedule = (scheduleData) => {
+  const { date, month_start, year_start } = scheduleData;
+
+  // Force valid date up to 28
+  const safeDate = Math.min(date, 28);
+
+  let runDate = new Date(year_start, month_start, safeDate);
+
+  runDate = setHours(runDate, 3);
+  runDate = setMinutes(runDate, 0);
+  runDate = setSeconds(runDate, 0);
+  runDate = setMilliseconds(runDate, 0);
+
+  return zonedTimeToUtc(runDate, TIMEZONE);
+};

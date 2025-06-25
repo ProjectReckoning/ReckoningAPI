@@ -2049,6 +2049,117 @@ paths:
         "409":
           description: Conflict (already processed or not authorized)
 
+  /transaction/transfer/schedule:
+    post:
+      summary: Set a scheduled recurring transfer from a pocket
+      tags:
+        - Transaction
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - pocket_id
+                - balance
+                - destination
+                - date
+                - start
+                - end
+              properties:
+                pocket_id:
+                  type: integer
+                  example: 2
+                balance:
+                  type: number
+                  example: 100000
+                destination:
+                  type: string
+                  example: "REKENING SESEORANG"
+                date:
+                  type: string
+                  format: date
+                  example: "2025-07-15"
+                  description: Day of month to run the transfer (as date string, only day part is used)
+                start:
+                  type: string
+                  format: date
+                  example: "2025-07-01"
+                  description: Start date of the recurring schedule
+                end:
+                  type: string
+                  format: date
+                  example: "2025-12-31"
+                  description: End date of the recurring schedule
+      responses:
+        "200":
+          description: Scheduled transfer created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      id:
+                        type: integer
+                        example: 10
+                      user_id:
+                        type: integer
+                        example: 2
+                      pocket_id:
+                        type: integer
+                        example: 2
+                      recurring_amount:
+                        type: number
+                        example: 100000
+                      treshold_amount:
+                        type: number
+                        example: 0
+                      status:
+                        type: string
+                        example: active
+                      is_active:
+                        type: boolean
+                        example: true
+                      schedule_type:
+                        type: string
+                        example: monthly
+                      schedule_value:
+                        type: integer
+                        example: 15
+                      next_run_date:
+                        type: string
+                        format: date-time
+                        example: 2025-07-15T03:00:00.000Z
+                      createdAt:
+                        type: string
+                        format: date-time
+                        example: 2025-06-25T10:00:00.000Z
+                      updatedAt:
+                        type: string
+                        format: date-time
+                        example: 2025-06-25T10:00:00.000Z
+                  message:
+                    type: string
+                    example: Set transfer schedule from pocket success
+                  code:
+                    type: integer
+                    example: 200
+        "400":
+          description: Bad request or insufficient balance
+        "401":
+          description: Unauthorized
+        "404":
+          description: User/Pocket not found or user is not a member of that pocket
+
 components:
   securitySchemes:
     bearerAuth:

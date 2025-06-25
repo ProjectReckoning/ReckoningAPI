@@ -75,8 +75,8 @@ module.exports.initTransfer = async (req, res) => {
 
   transferModules.initTransfer(userData, transferData)
     .then(resp => {
-      logger.info('Transfer from pocket success');
-      wrapper.response(res, 'success', wrapper.data(resp), 'Transfer from pocket success', 200);
+      logger.info('Initiate transfer from pocket success');
+      wrapper.response(res, 'success', wrapper.data(resp), 'Initiate transfer from pocket success', 200);
     })
     .catch(err => {
       logger.error('Error while transfer from pocket', err);
@@ -99,5 +99,29 @@ module.exports.respondTransfer = async (req, res) => {
     .catch(err => {
       logger.error('Error while respond the transaction', err);
       wrapper.response(res, 'fail', wrapper.error(err), `Error while respond the transaction. Error: ${err}`, 400);
+    });
+}
+
+module.exports.setTransferSchedule = async (req, res) => {
+  const userData = req.userData;
+  const scheduleData = {
+    pocket_id: req.body.pocket_id,
+    balance: req.body.balance,
+    destination: req.body.destination,
+    date: new Date(req.body.date).getDate(),
+    month_start: new Date(req.body.start).getMonth(),
+    year_start: new Date(req.body.start).getFullYear(),
+    month_end: new Date(req.body.end).getMonth(),
+    year_end: new Date(req.body.end).getFullYear(),
+  };
+
+  transferModules.setTransferSchedule(userData, scheduleData)
+    .then(resp => {
+      logger.info('Set transfer schedule from pocket success');
+      wrapper.response(res, 'success', wrapper.data(resp), 'Set transfer schedule from pocket success', 200);
+    })
+    .catch(err => {
+      logger.error('Error while set transfer schedule from pocket', err);
+      wrapper.response(res, 'fail', wrapper.error(err), `Error while set transfer schedule from pocket. Error: ${err}`, 400);
     });
 }
