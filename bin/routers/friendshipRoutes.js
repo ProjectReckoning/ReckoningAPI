@@ -11,7 +11,6 @@ router.get(
     friendshipController.getFriendship
 );
 
-
 // Route to send a friendship request
 router.post(
   "/request",
@@ -36,7 +35,7 @@ router.delete(
 
 // Route to get all friendship requests for the authenticated user
 router.get(
-  "/requests",
+  "/request",
   userAuth.authenticateToken,
   friendshipController.getAllFriendshipRequests
 );

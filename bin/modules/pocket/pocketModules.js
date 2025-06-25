@@ -661,6 +661,7 @@ module.exports.deletePocketMember = async (pocketId, userId, memberList) => {
         user_id: memberList,
       },
     });
+    // console.log("Deleted members count:", deletedMembers);
     if (deletedMembers === 0) {
       throw new NotFoundError("No members found to delete");
     }
@@ -679,12 +680,7 @@ module.exports.deletePocketMember = async (pocketId, userId, memberList) => {
 
 module.exports.leavePocket = async (pocketId, userId) => {
   try {
-    // Check if the user is a member of the pocket
-    const isMember = await PocketMember.findAll({
-      where: {
-        pocket_id: pocketId
-      },
-    });
+    console.log("Leaving pocket:", pocketId, "for user:", userId);
 
     const member = await PocketMember.findOne({
       where: {
@@ -693,9 +689,27 @@ module.exports.leavePocket = async (pocketId, userId) => {
       },
     })
 
-    if (member.role === "owner") {
-      throw new BadRequestError("Can't Leave before all members are removed");
+    if(!member){
+      throw new NotFoundError("You are not a member of this pocket");
     }
+
+    if (member.role === "owner") {
+      throw new BadRequestError("Owner pocket cannot leave the pocket, owner just can delete the pocket");
+    }
+
+    // Hapus diri sendiri dari pocket
+    const deletedCount = await PocketMember.destroy({
+      where: {
+        pocket_id: pocketId,
+        user_id: userId,
+      }
+    })
+
+    return {
+      message: "You have left the pocket successfully"
+    };
+
+
 
   } catch (error) {
     logger.error(error);
@@ -759,7 +773,6 @@ module.exports.updateRolePocketMember = async (
 
     // Owner bisa mengubah admin maupun member
     targetMember.role = newRole;
-    console.log("Target Member:", targetMember);
     await targetMember.save();
 
     return {

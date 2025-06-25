@@ -68,12 +68,14 @@ router.post(
   pocketController.addMembersToPocket
 );
 
+// Router get member pocket
 router.get(
   "/:pocketId/members",
   userAuth.authenticateToken,
   pocketController.getMembersOfPocket
 );
 
+// Router delete member from pocket
 router.delete(
   "/:pocketId/members",
   userAuth.authenticateToken,
@@ -94,7 +96,7 @@ router.patch(
 );
 
 router.patch(
-  "/:pocketId/members/:memberId/role",
+  "/:pocketId/members/role",
   userAuth.authenticateToken,
   pocketController.updateRolePocketMember
 );
