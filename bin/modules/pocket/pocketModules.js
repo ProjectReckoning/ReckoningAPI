@@ -164,7 +164,6 @@ module.exports.inviteMember = async (userData, additionalMembers, pocketId) => {
 
     return { inviteData, addonMessage };
   } catch (error) {
-    await t.rollback();
     logger.error(error);
     throw new InternalServerError(error.message);
   }
