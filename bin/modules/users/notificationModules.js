@@ -14,14 +14,14 @@ module.exports.registerPushToken = async (notifData) => {
     mongoDb.setCollection('usersToken');
 
     const recordSet = await mongoDb.findOne({ userId: notifData.userId });
-    if (recordSet && recordSet.data?.expoPushToken === notifData.expoPushToken) {
+    if (recordSet.data && recordSet.data?.expoPushToken === notifData.expoPushToken) {
       return {
         result: recordSet.data,
         message: "Push token already registered"
       }
     }
 
-    if (recordSet && recordSet.data?.expoPushToken !== notifData.expoPushToken) {
+    if (recordSet.data && recordSet.data?.expoPushToken !== notifData.expoPushToken) {
       const result = await mongoDb.upsertOne({
         _id: new ObjectId(recordSet.data._id)
       }, {

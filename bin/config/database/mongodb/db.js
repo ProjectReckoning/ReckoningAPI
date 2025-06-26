@@ -2,15 +2,13 @@ const validate = require('validate.js');
 const mongoConnection = require('./connection');
 const wrapper = require('../../../helpers/utils/wrapper');
 const { MongoClient } = require('mongodb');
+const logger = require('../../../helpers/utils/logger');
 
 class DB {
 
   constructor(config) {
     this.config = config;
-    this.client = new MongoClient(this.config, {
-      useNewUrlParser: true,
-      useUnifiedTopology: true,
-    });
+    this.client = new MongoClient(this.config);
   }
 
   setCollection(collectionName) {
@@ -29,6 +27,7 @@ class DB {
     const ctx = 'mongodb-findOne';
     const dbName = await this.getDatabase();
     // const result = await mongoConnection.getConnection(this.config);
+    logger.info('mau connect');
     await this.client.connect();
     try {
       // console.log("halo", result.data.db);
@@ -36,6 +35,7 @@ class DB {
       const connection = this.client.db(dbName);
       const db = connection.collection(this.collectionName);
       const recordset = await db.findOne(parameter);
+      logger.info('masuk db kok')
       if (validate.isEmpty(recordset)) {
         return wrapper.error('Data Not Found Please Try Another Input');
       }
