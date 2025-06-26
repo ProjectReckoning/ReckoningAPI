@@ -1678,6 +1678,74 @@ paths:
         "404":
           description: Pocket not found or user not a member
 
+  /pocket/business:
+    get:
+      summary: Get all business pockets for the authenticated user
+      tags:
+        - Pocket (Business)
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: List of business pockets
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                    example: true
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        pocket_id:
+                          type: integer
+                          example: 1
+                        name:
+                          type: string
+                          example: "Toko Kue"
+                        type:
+                          type: string
+                          example: "business"
+                        target_nominal:
+                          type: string
+                          example: "10000000"
+                        current_balance:
+                          type: string
+                          example: "5000000"
+                        deadline:
+                          type: string
+                          format: date-time
+                          example: "2025-12-31T00:00:00.000Z"
+                        status:
+                          type: string
+                          example: "active"
+                        icon_name:
+                          type: string
+                          example: "store"
+                        color_hex:
+                          type: string
+                          example: "#FF6384"
+                        account_number:
+                          type: string
+                          example: "PKT001234567891"
+                        user_role:
+                          type: string
+                          example: "owner"
+                  message:
+                    type: string
+                    example: Business pockets fetched successfully
+                  code:
+                    type: integer
+                    example: 200
+        "400":
+          description: Bad request
+        "401":
+          description: Unauthorized
+
   /pocket/business/stats:
     get:
       summary: Get business pocket statistics overview for the authenticated user
