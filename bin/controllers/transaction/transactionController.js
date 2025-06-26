@@ -128,7 +128,7 @@ module.exports.setTransferSchedule = async (req, res) => {
 
 module.exports.getTransferSchedule = async (req, res) => {
   const userData = req.userData;
-  const pocket_id = req.params.pocket_id;
+  const pocket_id = req.params.pocketId;
 
   transferModules.getTransferSchedule(userData, pocket_id)
     .then(resp => {
