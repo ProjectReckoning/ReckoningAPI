@@ -2239,8 +2239,6 @@ paths:
           description: Bad request
         "401":
           description: Unauthorized
-
-  /friendship/requests:
     get:
       summary: Get all friendship requests (sent and received)
       tags:
@@ -2315,7 +2313,6 @@ paths:
                     example: 200
         "401":
           description: Unauthorized
-
 
   /friendship/request/{requestId}:
     patch:
