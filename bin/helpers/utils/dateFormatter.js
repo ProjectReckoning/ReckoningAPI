@@ -1,4 +1,4 @@
-const { utcToZonedTime, zonedTimeToUtc } = require('date-fns-tz');
+const { toZonedTime, fromZonedTime } = require('date-fns-tz');
 const {
   addDays,
   addMonths,
@@ -11,22 +11,22 @@ const {
 const TIMEZONE = 'Asia/Jakarta'; // WIB (GMT+7)
 
 module.exports.getCurrentMonth = () => {
-  const now = utcToZonedTime(new Date(), TIMEZONE);
+  const now = toZonedTime(new Date(), TIMEZONE);
   const year = now.getFullYear();
   const monthNum = String(now.getMonth() + 1).padStart(2, '0');
   return `${year}-${monthNum}`;
 };
 
 module.exports.getCurrentWIBDate = () => {
-  return utcToZonedTime(new Date(), TIMEZONE);
+  return toZonedTime(new Date(), TIMEZONE);
 };
 
 module.exports.toUTCFromWIB = (date) => {
-  return zonedTimeToUtc(date, TIMEZONE);
+  return fromZonedTime(date, TIMEZONE);
 };
 
 module.exports.calculateNextRunDate = (scheduleType, scheduleValue) => {
-  const now = utcToZonedTime(new Date(), TIMEZONE);
+  const now = toZonedTime(new Date(), TIMEZONE);
   let next;
 
   if (scheduleType === 'weekly') {
@@ -50,7 +50,7 @@ module.exports.calculateNextRunDate = (scheduleType, scheduleValue) => {
   next = setMilliseconds(next, 0);
 
   // Convert WIB time to UTC to store in DB
-  return zonedTimeToUtc(next, TIMEZONE);
+  return fromZonedTime(next, TIMEZONE);
 };
 
 module.exports.calculateNextRunDateFromSchedule = (scheduleData) => {
@@ -66,5 +66,5 @@ module.exports.calculateNextRunDateFromSchedule = (scheduleData) => {
   runDate = setSeconds(runDate, 0);
   runDate = setMilliseconds(runDate, 0);
 
-  return zonedTimeToUtc(runDate, TIMEZONE);
+  return fromZonedTime(runDate, TIMEZONE);
 };
