@@ -73,9 +73,9 @@ module.exports.inviteMember = async (req, res) => {
   }));
 
   pocketModules.inviteMember(userData, additionalMembers, pocketId)
-    .then(resp => {
+    .then(({ inviteData, message }) => {
       logger.info('Invitation has been sent');
-      wrapper.response(res, 'success', wrapper.data(resp.inviteData), resp.message, 201);
+      wrapper.response(res, 'success', wrapper.data(inviteData), message, 201);
     })
     .catch(err => {
       logger.error('Error while sending the invitation', err);
