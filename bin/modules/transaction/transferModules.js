@@ -1,9 +1,11 @@
 const { BadRequestError, ConflictError, NotFoundError, InternalServerError } = require("../../helpers/error");
 const logger = require("../../helpers/utils/logger");
-const { User, Pocket, PocketMember, MockSavingsAccount, TransactionApproval, Transaction, sequelize } = require("../../models");
+const { AutoBudgeting, User, Pocket, PocketMember, MockSavingsAccount, TransactionApproval, Transaction, sequelize } = require("../../models");
 const config = require('../../config');
 const MongoDb = require('../../config/database/mongodb/db');
 const mongoDb = new MongoDb(config.get('/mongoDbUrl'));
+const { calculateNextRunDate, calculateNextRunDateFromSchedule, toUTCFromWIB } = require("../../helpers/utils/dateFormatter");
+const { Op } = require("sequelize");
 
 const calculateSmartSplit = ({
   initiatorUserId,
@@ -399,6 +401,226 @@ module.exports.respondTransfer = async (userData, approvalData) => {
     return { result, message };
   } catch (error) {
     await t.rollback();
+    logger.error(error);
+    if (
+      error instanceof BadRequestError ||
+      error instanceof ConflictError ||
+      error instanceof NotFoundError
+    ) {
+      throw error;
+    }
+    throw new InternalServerError(error.message);
+  }
+}
+
+module.exports.setTransferSchedule = async (userData, scheduleData) => {
+  const t = await sequelize.transaction();
+  try {
+    const [user, pocket, member] = await Promise.all([
+      User.findOne({
+        where: {
+          id: userData.id
+        }
+      }),
+      Pocket.findOne({
+        where: {
+          id: scheduleData.pocket_id
+        }
+      }),
+      PocketMember.findOne({
+        where: {
+          pocket_id: scheduleData.pocket_id,
+          user_id: userData.id
+        }
+      })
+    ])
+
+    if (!user || !pocket || !member) {
+      throw new NotFoundError("User/Pocket not found or user is not a member of that pocket");
+    }
+
+    // Check if the current_balance of the pocket is enough to make the transaction
+    if (pocket.current_balance < scheduleData.balance) {
+      throw new ConflictError("Pocket's current balance is not enough to make the transaction");
+    }
+
+    // Create schedule transfer in autobudget
+    // set the next_run_date with the start_date, start_month, start_year
+    const nextRunDate = calculateNextRunDateFromSchedule({
+      date: scheduleData.date,
+      month_start: scheduleData.month_start,
+      year_start: scheduleData.year_start
+    });
+
+    const data = {
+      user_id: userData.id,
+      pocket_id: scheduleData.pocket_id,
+      recurring_amount: scheduleData.balance,
+      treshold_amount: 0,
+      status: 'active',
+      is_active: true,
+      schedule_type: 'monthly',
+      schedule_value: scheduleData.date,
+      next_run_date: nextRunDate,
+    }
+    const scheduled = await AutoBudgeting.create(data, { transaction: t });
+
+    // Save start date and end date in mongo
+    mongoDb.setCollection('scheduledTransferDate');
+    await mongoDb.insertOne({
+      auto_budget_id: scheduled.id,
+      destination: scheduleData.destination,
+      user_id: userData.id,
+      pocket_id: scheduleData.pocket_id,
+      start_date: calculateNextRunDateFromSchedule({
+        date: scheduleData.date,
+        month_start: scheduleData.month_start,
+        year_start: scheduleData.year_start
+      }),
+      end_date: calculateNextRunDateFromSchedule({
+        date: scheduleData.date,
+        month_start: scheduleData.month_end,
+        year_start: scheduleData.year_end
+      }),
+    })
+
+    // commit
+    await t.commit();
+
+    return scheduled;
+  } catch (error) {
+    await t.rollback();
+    logger.error(error);
+    if (
+      error instanceof BadRequestError ||
+      error instanceof ConflictError ||
+      error instanceof NotFoundError
+    ) {
+      throw error;
+    }
+    throw new InternalServerError(error.message);
+  }
+}
+
+module.exports.processRecurringAutoTransfer = async (budget) => {
+  const t = await sequelize.transaction();
+  try {
+    const account = await MockSavingsAccount.findOne({ where: { user_id: budget.user_id } });
+    if (!account || account.balance < budget.recurring_amount) {
+      // I want it to change the next_run_date to tomorrow the autobudget in db
+      return;
+    }
+
+    const trx = await Transaction.create({
+      pocket_id: budget.pocket_id,
+      initiator_user_id: budget.user_id,
+      type: 'Transfer',
+      purpose: 'Auto transfer',
+      amount: budget.recurring_amount,
+      status: 'pending',
+      is_business_expense: true,
+    }, { transaction: t });
+
+    const members = await PocketMember.findAll({
+      where: {
+        pocket_id: budget.pocket_id,
+        [Op.or]: [
+          { role: 'admin' },
+          { role: 'owner' },
+        ],
+      },
+      attributes: ['user_id', 'contribution_amount'],
+    })
+
+    const splitResult = calculateSmartSplit({
+      initiatorUserId: budget.user_id,
+      totalBalance,
+      transferAmount: budget.recurring_amount,
+      members
+    })
+
+    await this.executeSplitTransfer(trx.id, {
+      pocket_id: budget.pocket_id,
+      balance: budget.recurring_amount
+    }, splitResult, t);
+
+
+    budget.last_triggered_at = new Date();
+
+    mongoDb.setCollection('scheduledTransferDate');
+    const dateSchedule = await mongoDb.findOne({
+      auto_budget_id: budget.id,
+      user_id: budget.user_id,
+      pocket_id: budget.pocket_id,
+    });
+
+    if (new Date(dateSchedule.data.end_date) <= new Date()) {
+      budget.status = 'completed';
+      budget.is_active = false;
+    }
+
+    budget.next_run_date = calculateNextRunDate(budget.schedule_type, budget.schedule_value);
+    await budget.save({ transaction: t });
+
+    await t.commit();
+  } catch (err) {
+    await t.rollback();
+    logger.error('Recurring budget error:', err);
+  }
+};
+
+module.exports.getTransferSchedule = async (userData, pocket_id) => {
+  try {
+    const [user, pocket, member] = await Promise.all([
+      User.findByPk(userData.id),
+      Pocket.findOne({
+        where: {
+          id: pocket_id,
+          type: 'business'
+        }
+      }),
+      PocketMember.findOne({
+        where: {
+          user_id: userData.id,
+          pocket_id: pocket_id,
+          [Op.or]: [
+            { role: 'admin' },
+            { role: 'owner' }
+          ]
+        }
+      })
+    ]);
+
+    if (!user || !pocket || !member) {
+      throw new NotFoundError('User/Pocket not found or user is not an admin/owner of this pocket');
+    }
+
+    const scheduleTransfer = await AutoBudgeting.findAll({
+      where: {
+        pocket_id: pocket_id,
+        is_active: true
+      },
+      attributes: [
+        'id',
+        'recurring_amount',
+        'next_run_date',
+        'status'
+      ],
+      order: [['next_run_date', 'ASC']],
+      raw: true
+    });
+
+    mongoDb.setCollection('scheduledTransferDate');
+    const result = await Promise.all(scheduleTransfer.map(async (sched) => {
+      const mongo = await mongoDb.findOne({ auto_budget_id: sched.id });
+      return {
+        ...sched,
+        detail: mongo?.data || null
+      };
+    }));
+
+    return result;
+  } catch (error) {
     logger.error(error);
     if (
       error instanceof BadRequestError ||

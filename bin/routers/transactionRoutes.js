@@ -17,4 +17,8 @@ router.post('/set-auto-budget/:pocketId', userAuth.authenticateToken, transactio
 router.post('/transfer', userAuth.authenticateToken, transactionController.initTransfer);
 router.patch('/transfer/:transactionId', userAuth.authenticateToken, transactionController.respondTransfer);
 
+// Scheduled transfer
+router.post('/transfer/schedule', userAuth.authenticateToken, transactionController.setTransferSchedule);
+router.get('/transfer/schedule', userAuth.authenticateToken, transactionController.getTransferSchedule);
+
 module.exports = router;

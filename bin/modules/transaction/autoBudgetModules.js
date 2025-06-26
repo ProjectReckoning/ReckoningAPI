@@ -3,6 +3,7 @@ const { InternalServerError, BadRequestError, NotFoundError, ConflictError } = r
 const { calculateNextRunDate } = require("../../helpers/utils/dateFormatter");
 const logger = require("../../helpers/utils/logger");
 const { AutoBudgeting, sequelize, Pocket, PocketMember, MockSavingsAccount, Transaction } = require('../../models');
+const { processRecurringAutoTransfer } = require("./transferModules");
 
 const processRecurringAutoBudget = async (budget) => {
   const t = await sequelize.transaction();
@@ -15,7 +16,6 @@ const processRecurringAutoBudget = async (budget) => {
       return;
     }
 
-    account.balance -= budget.recurring_amount;
     account.earmarked_balance += budget.recurring_amount;
     await account.save({ transaction: t });
 
@@ -37,7 +37,7 @@ const processRecurringAutoBudget = async (budget) => {
       is_business_expense: false,
     }, { transaction: t });
 
-    budget.last_run_date = new Date();
+    budget.last_triggered_at = new Date();
     if (budget.schedule_type !== 'once') {
       budget.next_run_date = calculateNextRunDate(budget.schedule_type, budget.schedule_value);
     } else {
@@ -49,26 +49,53 @@ const processRecurringAutoBudget = async (budget) => {
     await t.commit();
   } catch (err) {
     await t.rollback();
-    console.error('Recurring budget error:', err);
+    logger.error('Recurring budget error:', err);
   }
 }
 
-module.exports.runAutoBudgetJob = async () => {
+const getAutoBudgets = async (pocketTypeCondition) => {
   const now = new Date();
-
-  const budgets = await AutoBudgeting.findAll({
+  return AutoBudgeting.findAll({
     where: {
       is_active: true,
       status: 'active',
       recurring_amount: { [Op.gt]: 0 },
       next_run_date: { [Op.lte]: now }
-    }
+    },
+    include: [
+      {
+        model: Pocket,
+        required: true,
+        where: pocketTypeCondition
+      }
+    ]
   });
+};
 
-  for (const budget of budgets) {
-    await processRecurringAutoBudget(budget);
-  }
-}
+module.exports.runAutoBudgetJob = async () => {
+  const [budgets, transfers] = await Promise.all([
+    getAutoBudgets({ type: { [Op.not]: 'business' } }),
+    getAutoBudgets({ type: 'business' })
+  ]);
+
+  await Promise.all([
+  ...budgets.map(async (b) => {
+    try {
+      await processRecurringAutoBudget(b);
+    } catch (err) {
+      logger.error(`Error processing AutoBudget ${b.id}`, err);
+    }
+  }),
+  ...transfers.map(async (t) => {
+    try {
+      await processRecurringAutoTransfer(t);
+    } catch (err) {
+      logger.error(`Error processing AutoTransfer ${t.id}`, err);
+    }
+  })
+]);
+
+};
 
 module.exports.setAutoBudget = async (autoBudgetData) => {
   const t = await sequelize.transaction();
@@ -112,6 +139,6 @@ module.exports.setAutoBudget = async (autoBudgetData) => {
       error instanceof NotFoundError ||
       error instanceof ConflictError
     )
-    throw new InternalServerError(error.message);
+      throw new InternalServerError(error.message);
   }
 }
