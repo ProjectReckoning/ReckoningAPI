@@ -181,17 +181,33 @@ module.exports.initTransfer = async (userData, transferData) => {
 
         await TransactionApproval.create(approvalData, { transaction: t });
 
+        const notifData = {
+          date: new Date.now(),
+          type: 'transaction_approval_needed',
+          message: `${userData.name} needs your approval for his transaction. ${amount} will be withdrawn from your balance, you could accept or reject it`,
+          requestedBy: {
+            id: userData.id,
+            name: userData.name,
+          },
+          transaction_id: result.id,
+          amount,
+          pocket,
+          user_id: member.user_id,
+          transaction_detail: result
+        }
+
         const pushToken = await notificationModules.getPushToken(user_id);
         const notifMessage = notificationModules.setNotificationData({
           pushToken,
           title: `Needs approval for ${userData.name} transaction`,
           body: `${userData.name} needs your approval for his transaction. ${amount} will be withdrawn from your balance, you could accept or reject it`,
-          data: {
-            // Fill the rest later
-          }
+          data: notifData
         })
 
         await notificationModules.pushNotification(notifMessage);
+
+        mongoDb.setCollection('notifications');
+        await mongoDb.insertOne(notifMessage);
       }
     }
 
@@ -365,17 +381,22 @@ module.exports.respondTransfer = async (userData, approvalData) => {
       );
 
       try {
+        const notifData = {
+          date: new Date.now(),
+          type: 'information',
+          message: `${userData.name} rejected your request. Transaction has been cancelled.`,
+        }
         const pushToken = await notificationModules.getPushToken(transactionData.initiator_user_id);
         const notifMessage = notificationModules.setNotificationData({
           pushToken,
           title: `Your transfer request was rejected`,
           body: `${userData.name} rejected your request. Transaction has been cancelled.`,
-          data: {
-            transaction_id: transactionData.id,
-            // Fill the rest later
-          }
+          data: notifData
         });
         await notificationModules.pushNotification(notifMessage);
+
+        mongoDb.setCollection('notifications');
+        await mongoDb.insertOne(notifMessage);
       } catch (error) {
         logger.info('Transaction has been rejected');
       }
@@ -395,6 +416,26 @@ module.exports.respondTransfer = async (userData, approvalData) => {
 
       await this.executeSplitTransfer(approvalData.transactionId, transferData, pocketSplit.data.splitResult, t);
       message = `User has responded with ${approvalData.status}, and transfer has been done.`;
+      try {
+        const notifData = {
+          date: new Date.now(),
+          type: 'information',
+          message: `${userData.name} accepted your request. Transaction has been done.`,
+        }
+        const pushToken = await notificationModules.getPushToken(transactionData.initiator_user_id);
+        const notifMessage = notificationModules.setNotificationData({
+          pushToken,
+          title: `Your transfer request was accepted`,
+          body: `${userData.name} accepted your request. Transaction has been done.`,
+          data: notifData
+        });
+        await notificationModules.pushNotification(notifMessage);
+
+        mongoDb.setCollection('notifications');
+        await mongoDb.insertOne(notifMessage);
+      } catch (error) {
+        logger.info('Transaction has been accepted');
+      }
     }
 
     await t.commit();

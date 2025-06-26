@@ -42,6 +42,16 @@ module.exports.createPocket = async (pocketData, owner, additionalMembers) => {
       mongoDb.setCollection('invitationStatus');
       try {
         for (const member of additionalMembers) {
+          const userMember = await User.findOne({
+            where: {
+              id: member.user_id
+            }
+          });
+
+          if (!userMember) {
+            throw new NotFoundError('User to invite not found');
+          }
+
           const inviteData = await mongoDb.insertOne({
             type: 'pocket_invite',
             inviterUserId: owner.id,
@@ -52,19 +62,30 @@ module.exports.createPocket = async (pocketData, owner, additionalMembers) => {
             updated_at: new Date()
           })
 
-          // Send notification will be here
+          const notifData = {
+            date: new Date.now(),
+            type: 'member_approval_needed',
+            message: `${owner.name} has been invite you to pocket ${pocket.name}, you could accept or reject it`,
+            requestedBy: {
+              id: owner.id,
+              name: owner.name,
+            },
+            pocket,
+            inviteData,
+            user_id: member.user_id
+          }
           const pushToken = await notificationModules.getPushToken(member.user_id);
           const notifMessage = notificationModules.setNotificationData({
             pushToken,
             title: `Invitation to pocket ${pocket.name} from ${owner.name}`,
             body: `${owner.name} has been invite you to pocket ${pocket.name}, you could accept or reject it`,
-            data: {
-              invite_id: inviteData.data._id,
-              // Fill the rest later
-            }
+            data: notifData
           })
 
           await notificationModules.pushNotification(notifMessage);
+
+          mongoDb.setCollection('notifications');
+          await mongoDb.insertOne(notifMessage);
         }
         addonMessage = 'Pocket creation and invite friend success';
       } catch (error) {
@@ -88,6 +109,16 @@ module.exports.inviteMember = async (userData, additionalMembers, pocketId) => {
       mongoDb.setCollection('invitationStatus');
       try {
         for (const member of additionalMembers) {
+          const userMember = await User.findOne({
+            where: {
+              id: member.user_id
+            }
+          });
+
+          if (!userMember) {
+            throw new NotFoundError('User to invite not found');
+          }
+
           const inviteData = await mongoDb.insertOne({
             type: 'pocket_invite',
             inviterUserId: userData.id,
@@ -98,19 +129,31 @@ module.exports.inviteMember = async (userData, additionalMembers, pocketId) => {
             updated_at: new Date()
           })
 
+          const notifData = {
+            date: new Date.now(),
+            type: 'member_approval_needed',
+            message: `${userData.name} has been invite you to pocket ${pocket.name}, you could accept or reject it`,
+            requestedBy: {
+              id: userData.id,
+              name: userData.name
+            },
+            pocket,
+            inviteData,
+            user_id: member.user_id
+          }
+
           // Send notification will be here
           const pushToken = await notificationModules.getPushToken(member.user_id);
           const notifMessage = notificationModules.setNotificationData({
             pushToken,
             title: `Invitation to pocket ${pocket.name} from ${userData.name}`,
             body: `${userData.name} has been invite you to pocket ${pocket.name}, you could accept or reject it`,
-            data: {
-              invite_id: inviteData.data._id,
-              // Fill the rest later
-            }
-          })
+            data: notifData
+          });
 
           await notificationModules.pushNotification(notifMessage);
+          mongoDb.setCollection('notifications');
+          await mongoDb.insertOne(notifMessage);
         }
         addonMessage = 'Invite friend success';
       } catch (error) {
@@ -197,18 +240,24 @@ module.exports.respondInvite = async (userData, responseData) => {
 
     try {
       // Send notification will be here
+      const notifData = {
+        date: new Date.now(),
+        type: 'information',
+        message: `${userData.name} already ${responseData.response} your invitation to pocket ${pocket.name}`,
+        user_id: member.user_id
+      }
       const pushToken = await notificationModules.getPushToken(invitation.data.inviterUserId);
       const notifMessage = notificationModules.setNotificationData({
         pushToken,
-        title: `${userData.name} already ${responseData.response} your invitation`,
-        body: ``,
-        data: {
-          invite_id: inviteData.data._id,
-          // Fill the rest later
-        }
+        title: `${pocket.name}`,
+        body: `${userData.name} already ${responseData.response} your invitation`,
+        data: notifData
       })
 
       await notificationModules.pushNotification(notifMessage);
+
+      mongoDb.setCollection('notifications');
+      await mongoDb.insertOne(notifMessage);
     } catch (error) {
       logger.error('Notification failed to send');
     }
@@ -314,7 +363,7 @@ module.exports.detailPocket = async (pocketId, userId) => {
     let targetNominalMember = Math.floor(plainData.target_nominal / memberCount / 1000) * 1000;
     targetNominalMember = targetNominalMember.toString();
     // to string
-    
+
 
     // Extract owner and other members
     const ownerMember = plainData.pocketMembers.find(m => m.user_id === plainData.owner_user_id);
@@ -544,6 +593,16 @@ module.exports.bulkAddMembersToPocket = async (userData, pocketId, memberDataArr
     mongoDb.setCollection('invitationStatus');
     try {
       await Promise.all(newMembers.map(async (member) => {
+        const userMember = await User.findOne({
+          where: {
+            id: member.user_id
+          }
+        });
+
+        if (!userMember) {
+          throw new NotFoundError('User to invite not found');
+        }
+
         const inviteData = await mongoDb.insertOne({
           type: 'pocket_invite',
           inviterUserId: userData.id,
@@ -554,19 +613,30 @@ module.exports.bulkAddMembersToPocket = async (userData, pocketId, memberDataArr
           updated_at: new Date()
         })
 
-        // Send notification will be here
+        const notifData = {
+          date: new Date.now(),
+          type: 'member_approval_needed',
+          message: `${userData.name} has been invite you to pocket ${pocket.name}, you could accept or reject it`,
+          requestedBy: {
+            id: userData.id,
+            name: userData.name
+          },
+          pocket,
+          inviteData,
+          user_id: member.user_id
+        }
         const pushToken = await notificationModules.getPushToken(member.user_id);
         const notifMessage = notificationModules.setNotificationData({
           pushToken,
           title: `Invitation to pocket ${pocket.name} from ${userData.name}`,
           body: `${userData.name} has been invite you to pocket ${pocket.name}, you could accept or reject it`,
-          data: {
-            invite_id: inviteData.data._id,
-            // Fill the rest later
-          }
+          data: notifData
         })
 
         await notificationModules.pushNotification(notifMessage);
+
+        mongoDb.setCollection('notifications');
+        await mongoDb.insertOne(notifMessage);
       }))
     } catch (error) {
       addonMessage = 'Pocket creation success but some or all invite friend failed'
@@ -689,7 +759,7 @@ module.exports.leavePocket = async (pocketId, userId) => {
       },
     })
 
-    if(!member){
+    if (!member) {
       throw new NotFoundError("You are not a member of this pocket");
     }
 
