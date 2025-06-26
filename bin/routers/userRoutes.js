@@ -21,6 +21,8 @@ router.get('/me', userAuth.authenticateToken, authController.userProfile);
 router.post('/register-push-token', userAuth.authenticateToken, notificationController.registerPushToken);
 router.post('/login/request-otp', otpController.requestOtp);
 router.post('/login/verify-otp', otpController.verifyOtp);
+router.get('/notification', userAuth.authenticateToken, notificationController.getAllNotif);
+router.get('/notification/:notifId', userAuth.authenticateToken, notificationController.getDetailNotif);
 
 // Bank Account route
 router.patch('/add-balance', userAuth.authenticateToken, userController.addBalance);

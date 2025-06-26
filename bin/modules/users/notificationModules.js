@@ -92,3 +92,50 @@ module.exports.getPushToken = async (userId) => {
 
   return pushEntry.expoPushToken;
 }
+
+module.exports.getAllNotif = async (notifData) => {
+  try {
+    mongoDb.setCollection('notifications');
+    const notif = await mongoDb.findAllData({
+      user_id: notifData.userId
+    })
+
+    if (!notif.data) {
+      return [];
+    }
+
+    return notif.data;
+  } catch (error) {
+    logger.error(error);
+    if (
+      error instanceof NotFoundError
+    ) {
+      throw error;
+    }
+    throw new InternalServerError(error.message);
+  }
+}
+
+module.exports.getDetailNotif = async (notifData) => {
+  try {
+    mongoDb.setCollection('notifications');
+    const notif = await mongoDb.findOne({
+      _id: new ObjectId(notifData.notifId),
+      user_id: notifData.userId,
+    })
+
+    if (!notif.data) {
+      throw new NotFoundError('Notification not found');
+    }
+
+    return notif.data;
+  } catch (error) {
+    logger.error(error);
+    if (
+      error instanceof NotFoundError
+    ) {
+      throw error;
+    }
+    throw new InternalServerError(error.message);
+  }
+}
