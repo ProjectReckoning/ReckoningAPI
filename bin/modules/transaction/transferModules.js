@@ -469,6 +469,7 @@ module.exports.setTransferSchedule = async (userData, scheduleData) => {
     mongoDb.setCollection('scheduledTransferDate');
     await mongoDb.insertOne({
       auto_budget_id: scheduled.id,
+      destination: scheduleData.destination,
       user_id: userData.id,
       pocket_id: scheduleData.pocket_id,
       start_date: calculateNextRunDateFromSchedule({
@@ -545,7 +546,7 @@ module.exports.processRecurringAutoTransfer = async (budget) => {
 
 
     budget.last_triggered_at = new Date();
-    
+
     mongoDb.setCollection('scheduledTransferDate');
     const dateSchedule = await mongoDb.findOne({
       auto_budget_id: budget.id,
@@ -564,6 +565,70 @@ module.exports.processRecurringAutoTransfer = async (budget) => {
     await t.commit();
   } catch (err) {
     await t.rollback();
-    console.error('Recurring budget error:', err);
+    logger.error('Recurring budget error:', err);
+  }
+};
+
+module.exports.getTransferSchedule = async (userData, pocket_id) => {
+  try {
+    const [user, pocket, member] = await Promise.all([
+      User.findByPk(userData.id),
+      Pocket.findOne({
+        where: {
+          id: pocket_id,
+          type: 'business'
+        }
+      }),
+      PocketMember.findOne({
+        where: {
+          user_id: userData.id,
+          pocket_id: pocket_id,
+          [Op.or]: [
+            { role: 'admin' },
+            { role: 'owner' }
+          ]
+        }
+      })
+    ]);
+
+    if (!user || !pocket || !member) {
+      throw new NotFoundError('User/Pocket not found or user is not an admin/owner of this pocket');
+    }
+
+    const scheduleTransfer = await AutoBudgeting.findAll({
+      where: {
+        pocket_id: pocket_id,
+        is_active: true
+      },
+      attributes: [
+        'id',
+        'recurring_amount',
+        'next_run_date',
+        'status'
+      ],
+      order: [['next_run_date', 'ASC']],
+      raw: true
+    });
+
+    mongoDb.setCollection('scheduledTransferDate');
+    const result = await Promise.all(scheduleTransfer.map(async (sched) => {
+      const mongo = await mongoDb.findOne({ auto_budget_id: sched.id });
+      return {
+        ...sched,
+        detail: mongo?.data || null
+      };
+    }));
+
+    return result;
+  } catch (error) {
+    logger.error(error);
+    if (
+      error instanceof BadRequestError ||
+      error instanceof ConflictError ||
+      error instanceof NotFoundError
+    ) {
+      throw error;
+    }
+    throw new InternalServerError(error.message);
   }
 }

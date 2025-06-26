@@ -125,3 +125,18 @@ module.exports.setTransferSchedule = async (req, res) => {
       wrapper.response(res, 'fail', wrapper.error(err), `Error while set transfer schedule from pocket. Error: ${err}`, 400);
     });
 }
+
+module.exports.getTransferSchedule = async (req, res) => {
+  const userData = req.userData;
+  const pocket_id = req.body.pocket_id;
+
+  transferModules.getTransferSchedule(userData, pocket_id)
+    .then(resp => {
+      logger.info('Transfer schedule has been fetched from pocket');
+      wrapper.response(res, 'success', wrapper.data(resp), 'Transfer schedule has been fetched from pocket', 200);
+    })
+    .catch(err => {
+      logger.error('Error while fetching transfer schedule from pocket', err);
+      wrapper.response(res, 'fail', wrapper.error(err), `Error while fetching transfer schedule from pocket. Error: ${err}`, 400);
+    });
+}

@@ -49,7 +49,7 @@ const processRecurringAutoBudget = async (budget) => {
     await t.commit();
   } catch (err) {
     await t.rollback();
-    console.error('Recurring budget error:', err);
+    logger.error('Recurring budget error:', err);
   }
 }
 
