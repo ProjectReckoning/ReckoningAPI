@@ -105,6 +105,7 @@ module.exports.createPocket = async (pocketData, owner, additionalMembers) => {
 module.exports.inviteMember = async (userData, additionalMembers, pocketId) => {
   try {
     const pocket = await Pocket.findByPk(pocketId);
+    let inviteData = {};
     if (Array.isArray(additionalMembers) && additionalMembers.length > 0) {
       mongoDb.setCollection('invitationStatus');
       try {
@@ -119,7 +120,7 @@ module.exports.inviteMember = async (userData, additionalMembers, pocketId) => {
             throw new NotFoundError('User to invite not found');
           }
 
-          const inviteData = await mongoDb.insertOne({
+          inviteData = await mongoDb.insertOne({
             type: 'pocket_invite',
             inviterUserId: userData.id,
             invitedUserId: member.user_id,
