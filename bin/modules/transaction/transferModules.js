@@ -465,7 +465,8 @@ module.exports.setTransferSchedule = async (userData, scheduleData) => {
       }),
       Pocket.findOne({
         where: {
-          id: scheduleData.pocket_id
+          id: scheduleData.pocket_id,
+          type: 'business'
         }
       }),
       PocketMember.findOne({

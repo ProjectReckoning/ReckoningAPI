@@ -19,6 +19,6 @@ router.patch('/transfer/:transactionId', userAuth.authenticateToken, transaction
 
 // Scheduled transfer
 router.post('/transfer/schedule', userAuth.authenticateToken, transactionController.setTransferSchedule);
-router.get('/transfer/schedule', userAuth.authenticateToken, transactionController.getTransferSchedule);
+router.get('/transfer/schedule/:pocketId', userAuth.authenticateToken, transactionController.getTransferSchedule);
 
 module.exports = router;
