@@ -22,9 +22,6 @@ jobs:
 
       - name: Deploy to Reckoning VPS
         run: |
-          ssh -i ~/.ssh/id_rsa ubuntu@${{ secrets.VPS_HOST }} << 'EOF'
-            cd ReckoningAPI
-            git pull origin dev
-            pm2 delete index || true
-            pm2 start index.js
+          ssh -i ~/.ssh/id_rsa ubuntu@${{ secrets.VPS_HOST }} \
+            "bash -l -c 'cd ReckoningAPI && git pull origin dev && pm2 delete index || true && pm2 start index.js'"
           EOF
