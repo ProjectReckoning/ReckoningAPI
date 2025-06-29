@@ -12,6 +12,7 @@ router.post('/withdraw', userAuth.authenticateToken, transactionController.initW
 
 // AutoBudget
 router.post('/set-auto-budget/:pocketId', userAuth.authenticateToken, transactionController.setAutoBudget);
+router.get('/auto-budget/:pocketId', userAuth.authenticateToken, transactionController.getAutoBudget);
 
 // Payment (Transfer only, for demo purpose)
 router.post('/transfer', userAuth.authenticateToken, transactionController.initTransfer);

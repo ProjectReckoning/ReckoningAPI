@@ -79,21 +79,21 @@ module.exports.runAutoBudgetJob = async () => {
   ]);
 
   await Promise.all([
-  ...budgets.map(async (b) => {
-    try {
-      await processRecurringAutoBudget(b);
-    } catch (err) {
-      logger.error(`Error processing AutoBudget ${b.id}`, err);
-    }
-  }),
-  ...transfers.map(async (t) => {
-    try {
-      await processRecurringAutoTransfer(t);
-    } catch (err) {
-      logger.error(`Error processing AutoTransfer ${t.id}`, err);
-    }
-  })
-]);
+    ...budgets.map(async (b) => {
+      try {
+        await processRecurringAutoBudget(b);
+      } catch (err) {
+        logger.error(`Error processing AutoBudget ${b.id}`, err);
+      }
+    }),
+    ...transfers.map(async (t) => {
+      try {
+        await processRecurringAutoTransfer(t);
+      } catch (err) {
+        logger.error(`Error processing AutoTransfer ${t.id}`, err);
+      }
+    })
+  ]);
 
 };
 
@@ -138,7 +138,37 @@ module.exports.setAutoBudget = async (autoBudgetData) => {
       error instanceof BadRequestError ||
       error instanceof NotFoundError ||
       error instanceof ConflictError
-    )
-      throw new InternalServerError(error.message);
+    ) {
+      throw error;
+    }
+    throw new InternalServerError(error.message);
+  }
+}
+
+module.exports.getAutoBudget = async (autoBudgetData) => {
+  const { user_id, pocket_id } = autoBudgetData;
+  if (!user_id || !pocket_id) {
+    throw new BadRequestError('user_id and pocket_id are required');
+  }
+
+  try {
+    const existAutoBudget = await AutoBudgeting.findAll({
+      where: {
+        user_id,
+        pocket_id,
+        status: 'active',
+        is_active: true
+      },
+      order: [
+        ['updatedAt', 'DESC']
+        ['createdAt', 'DESC']
+      ],
+      raw: true
+    });
+
+    return existAutoBudget;
+  } catch (error) {
+    logger.error(error);
+    throw new InternalServerError(error.message);
   }
 }

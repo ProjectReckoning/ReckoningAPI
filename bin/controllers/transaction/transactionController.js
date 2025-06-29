@@ -64,6 +64,23 @@ module.exports.setAutoBudget = async (req, res) => {
     });
 }
 
+module.exports.getAutoBudget = async (req, res) => {
+  const autoBudgetData = {
+    user_id: req.userData.id,
+    pocket_id: req.params.pocketId,
+  }
+
+  autoBudgetModules.getAutoBudget(autoBudgetData)
+    .then(resp => {
+      logger.info('Success fetch auto budget');
+      wrapper.response(res, 'success', wrapper.data(resp), 'Success fetch auto budget', 200);
+    })
+    .catch(err => {
+      logger.error('Error while fetch the auto budget', err);
+      wrapper.response(res, 'fail', wrapper.error(err), `Error while fetch the auto budget. Error: ${err}`, 400);
+    });
+}
+
 module.exports.initTransfer = async (req, res) => {
   const userData = req.userData;
   const transferData = {
