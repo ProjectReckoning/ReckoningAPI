@@ -105,22 +105,20 @@ module.exports.createPocket = async (pocketData, owner, additionalMembers) => {
 module.exports.inviteMember = async (userData, additionalMembers, pocketId) => {
   try {
     const pocket = await Pocket.findByPk(pocketId);
-    let inviteData = {};
+    if (!pocket) throw new NotFoundError('Pocket not found');
+
+    const results = [];
+    const inviteDataList = [];
+
     if (Array.isArray(additionalMembers) && additionalMembers.length > 0) {
       mongoDb.setCollection('invitationStatus');
-      try {
-        for (const member of additionalMembers) {
-          const userMember = await User.findOne({
-            where: {
-              id: member.user_id
-            }
-          });
 
-          if (!userMember) {
-            throw new NotFoundError('User to invite not found');
-          }
+      for (const member of additionalMembers) {
+        try {
+          const userMember = await User.findOne({ where: { id: member.user_id } });
+          if (!userMember) throw new NotFoundError(`User ${member.user_id} not found`);
 
-          inviteData = await mongoDb.insertOne({
+          const inviteData = await mongoDb.insertOne({
             type: 'pocket_invite',
             inviterUserId: userData.id,
             invitedUserId: member.user_id,
@@ -128,12 +126,13 @@ module.exports.inviteMember = async (userData, additionalMembers, pocketId) => {
             status: 'pending',
             created_at: new Date(),
             updated_at: new Date()
-          })
+          });
+          inviteDataList.push(inviteData);
 
           const notifData = {
-            date: new Date.now(),
+            date: new Date(),
             type: 'member_approval_needed',
-            message: `${userData.name} has been invite you to pocket ${pocket.name}, you could accept or reject it`,
+            message: `${userData.name} has invited you to pocket ${pocket.name}, you could accept or reject it`,
             requestedBy: {
               id: userData.id,
               name: userData.name
@@ -141,34 +140,37 @@ module.exports.inviteMember = async (userData, additionalMembers, pocketId) => {
             pocket,
             inviteData,
             user_id: member.user_id
-          }
+          };
 
-          // Send notification will be here
           const pushToken = await notificationModules.getPushToken(member.user_id);
           const notifMessage = notificationModules.setNotificationData({
             pushToken,
             title: `Invitation to pocket ${pocket.name} from ${userData.name}`,
-            body: `${userData.name} has been invite you to pocket ${pocket.name}, you could accept or reject it`,
+            body: notifData.message,
             data: notifData
           });
 
           await notificationModules.pushNotification(notifMessage);
           mongoDb.setCollection('notifications');
           await mongoDb.insertOne(notifMessage);
+
+          results.push({ user_id: member.user_id, status: 'success' });
+        } catch (err) {
+          logger.warn(`Invitation failed for user ${member.user_id}`, err);
+          results.push({ user_id: member.user_id, status: 'failed', error: err.message });
         }
-        addonMessage = 'Invite friend success';
-      } catch (error) {
-        logger.warn('Notification or invite failed', error);
-        addonMessage = 'Some or all invite friend failed'
       }
     }
 
-    return { inviteData, addonMessage };
+    const anyFailed = results.some(r => r.status === 'failed');
+    const addonMessage = anyFailed ? 'Some or all invite friend failed' : 'Invite friend success';
+
+    return { inviteData: inviteDataList, results, addonMessage };
   } catch (error) {
     logger.error(error);
     throw new InternalServerError(error.message);
   }
-}
+};
 
 module.exports.respondInvite = async (userData, responseData) => {
   const t = await sequelize.transaction();
