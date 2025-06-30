@@ -189,7 +189,7 @@ module.exports.deleteAutoBudget = async (autoBudgetData) => {
         is_active: true
       },
       order: [
-        ['updatedAt', 'DESC']
+        ['updatedAt', 'DESC'],
         ['createdAt', 'DESC']
       ]
     });

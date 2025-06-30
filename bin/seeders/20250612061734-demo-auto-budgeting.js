@@ -10,6 +10,7 @@ module.exports = {
         recurring_amount: 500000,
         treshold_amount: null,
         status: 'active',
+        category: 'topup',
         is_active: true,
         schedule_type: 'monthly',
         schedule_value: 1, // tanggal 1 setiap bulan
@@ -25,6 +26,7 @@ module.exports = {
         recurring_amount: 1000000,
         treshold_amount: null,
         status: 'active',
+        category: 'topup',
         is_active: true,
         schedule_type: 'monthly',
         schedule_value: 5, // tanggal 5 setiap bulan
@@ -40,6 +42,7 @@ module.exports = {
         recurring_amount: null,
         treshold_amount: 5000000, // jika balance > 5jt, auto invest
         status: 'active',
+        category: 'topup',
         is_active: true,
         schedule_type: 'threshold',
         schedule_value: null,
@@ -55,6 +58,7 @@ module.exports = {
         recurring_amount: 400000,
         treshold_amount: null,
         status: 'inactive',
+        category: 'topup',
         is_active: false,
         schedule_type: 'monthly',
         schedule_value: 1,
@@ -70,6 +74,7 @@ module.exports = {
         recurring_amount: 1000000,
         treshold_amount: null,
         status: 'active',
+        category: 'topup',
         is_active: true,
         schedule_type: 'weekly',
         schedule_value: 1, // setiap hari Senin
