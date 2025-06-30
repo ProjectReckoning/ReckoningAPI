@@ -26,6 +26,18 @@ module.exports = {
         allowNull: false,
         defaultValue: 'inactive'
       },
+      category: {
+        type: Sequelize.ENUM(
+          'penjualan',
+          'pembelian',
+          'topup',
+          'withdraw',
+          'gaji',
+          'transfer',
+          'autobudget',
+          'lainnya'
+        )
+      },
       is_active: {
         type: Sequelize.BOOLEAN
       },

@@ -126,7 +126,8 @@ module.exports.initTransfer = async (userData, transferData) => {
     // CASE 1: Initiator can fully cover
     let result = {};
     if (member.contribution_amount >= transferData.balance) {
-      result = await this.executeDirectTransfer(userData, transferData, t);
+      const is_business = pocket.type == 'business';
+      result = await this.executeDirectTransfer(userData, transferData, t, is_business);
     } else {
       // CASE 2: Initiator needs help — SmartSplit + apply to multiple members
       const members = await PocketMember.findAll({
@@ -151,9 +152,10 @@ module.exports.initTransfer = async (userData, transferData) => {
       const transactionData = {
         pocket_id: transferData.pocket_id,
         initiator_user_id: userData.id,
-        type: 'Transfer',
+        type: 'Expense',
         amount: transferData.balance,
-        purpose: 'Transfer ke [REKENING SESEORANG]',
+        destination_acc: 'BNI - [NO REKENING]',
+        category: 'transfer',
         status: 'pending',
         description: transferData.description || '',
         is_business_expense: false
@@ -227,7 +229,7 @@ module.exports.initTransfer = async (userData, transferData) => {
   }
 }
 
-module.exports.executeDirectTransfer = async (userData, transferData, t) => {
+module.exports.executeDirectTransfer = async (userData, transferData, t, is_business = false) => {
   await Promise.all([
     PocketMember.increment(
       {
@@ -268,12 +270,13 @@ module.exports.executeDirectTransfer = async (userData, transferData, t) => {
     {
       pocket_id: transferData.pocket_id,
       initiator_user_id: userData.id,
-      type: 'Transfer',
+      type: 'Expense',
       amount: transferData.balance,
-      purpose: 'Transfer ke [REKENING SESEORANG]',
+      destination_acc: 'BNI - [NO REKENING]',
+      category: 'transfer',
       status: 'completed',
       description: transferData.description || '',
-      is_business_expense: false
+      is_business_expense: is_business
     },
     { transaction: t }
   )
@@ -500,6 +503,7 @@ module.exports.setTransferSchedule = async (userData, scheduleData) => {
       recurring_amount: scheduleData.balance,
       treshold_amount: 0,
       status: 'active',
+      category: scheduleData.category,
       is_active: true,
       schedule_type: 'monthly',
       schedule_value: scheduleData.date,
@@ -556,9 +560,10 @@ module.exports.processRecurringAutoTransfer = async (budget) => {
     const trx = await Transaction.create({
       pocket_id: budget.pocket_id,
       initiator_user_id: budget.user_id,
-      type: 'Transfer',
-      purpose: 'Auto transfer',
+      type: 'Expense',
       amount: budget.recurring_amount,
+      destination_acc: 'BNI - [NO REKENING]',
+      category: 'autobudget',
       status: 'pending',
       is_business_expense: true,
     }, { transaction: t });

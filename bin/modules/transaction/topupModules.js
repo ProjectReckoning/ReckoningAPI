@@ -86,9 +86,10 @@ module.exports.initTopUp = async (userId, topupData) => {
     const transactionData = {
       pocket_id: topupData.pocket_id,
       initiator_user_id: userId,
-      type: 'Topup',
+      type: 'Income',
       amount: topupData.balance,
-      purpose: `Topup to ${pocket.name} - ${user.name}`,
+      destination_acc: null,
+      category: `topup`,
       status: 'completed',
       description: null,
       is_business_expense: false,

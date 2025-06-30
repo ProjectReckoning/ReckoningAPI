@@ -30,9 +30,10 @@ const processRecurringAutoBudget = async (budget) => {
     await Transaction.create({
       pocket_id: budget.pocket_id,
       initiator_user_id: budget.user_id,
-      type: 'Topup',
-      purpose: 'Auto budget recurring topup',
+      type: 'Income',
       amount: budget.recurring_amount,
+      destination_acc: null,
+      category: 'autobudget',
       status: 'completed',
       is_business_expense: false,
     }, { transaction: t });
@@ -160,7 +161,7 @@ module.exports.getAutoBudget = async (autoBudgetData) => {
         is_active: true
       },
       order: [
-        ['updatedAt', 'DESC']
+        ['updatedAt', 'DESC'],
         ['createdAt', 'DESC']
       ],
       raw: true

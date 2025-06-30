@@ -353,6 +353,7 @@ module.exports.detailPocket = async (pocketId, userId) => {
         pocket_id: ownerMember.pocket_id,
         role: ownerMember.role,
         contribution_amount: ownerMember.contribution_amount,
+        target_amount: targetNominalMember,
         joined_at: ownerMember.joined_at,
         is_active: ownerMember.is_active,
         createdAt: ownerMember.createdAt,
@@ -877,8 +878,6 @@ module.exports.getPocketHistory = async (pocketId, month) => {
       throw new Error("Pocket not found");
     }
 
-    const incomingTypes = ['Contribution', 'Payment', 'Income', 'AutoTopUp', 'AutoRecurring', 'Topup',];
-
     // 1. Get transactions within the month
     const history = await Transaction.findAll({
       where: {
@@ -896,16 +895,18 @@ module.exports.getPocketHistory = async (pocketId, month) => {
 
     history.forEach((tx) => {
       const dateKey = tx.createdAt.toISOString().split("T")[0];
-      const isIncoming = incomingTypes.includes(tx.type);
+      const isIncoming = tx.type === 'Income';
       const transactionType = isIncoming ? 1 : 0;
 
       const mappedTx = {
         id: tx.id,
         type: tx.type,
         transaction_type: transactionType,
-        amount: tx.amount,
+        amount: parseFloat(tx.amount) || 0,
         description: tx.description,
-        is_business_expense: tx.is_business_expense,
+        is_business_expense: tx.is_business_expense || false,
+        category: tx.category,
+        destination_acc: tx.destination_acc,
       };
 
       if (!groupedHistory[dateKey]) {
@@ -914,9 +915,9 @@ module.exports.getPocketHistory = async (pocketId, month) => {
       groupedHistory[dateKey].push(mappedTx);
 
       if (isIncoming) {
-        pemasukan += tx.amount;
+        pemasukan += mappedTx.amount;
       } else {
-        pengeluaran += tx.amount;
+        pengeluaran += mappedTx.amount;
       }
     });
 
@@ -944,17 +945,18 @@ module.exports.getPocketHistory = async (pocketId, month) => {
 
     let saldoKemarin = 0;
     previousTransactions.forEach((tx) => {
-      const isIncoming = incomingTypes.includes(tx.type);
-      saldoKemarin += isIncoming ? tx.amount : -tx.amount;
+      const isIncoming = tx.type === 'Income';
+      const amount = parseFloat(tx.amount) || 0;
+      saldoKemarin += isIncoming ? amount : -amount;
     });
 
     const saldoPenutupan = saldoKemarin + pemasukan - pengeluaran;
 
     return {
-      saldoKemarin,
-      saldoPenutupan,
-      pemasukan,
-      pengeluaran,
+      saldoKemarin: saldoKemarin.toString(),
+      saldoPenutupan: saldoPenutupan.toString(),
+      pemasukan: pemasukan.toString(),
+      pengeluaran: pengeluaran.toString(),
       transaksi: result,
     };
   } catch (error) {
@@ -965,13 +967,8 @@ module.exports.getPocketHistory = async (pocketId, month) => {
 
 module.exports.getLast5BusinessTransactionsForUser = async (userId, pocketId = null) => {
   try {
-    const incomingTypes = ['Contribution', 'Payment', 'Income', 'AutoTopUp', 'AutoRecurring', 'Topup',];
-
-    // 1. Find business pockets the user is a member of (optionally filter by pocketId)
     const pocketWhere = { type: 'business' };
-    if (pocketId) {
-      pocketWhere.id = pocketId;
-    }
+    if (pocketId) pocketWhere.id = pocketId;
 
     const businessPockets = await Pocket.findAll({
       where: pocketWhere,
@@ -986,13 +983,10 @@ module.exports.getLast5BusinessTransactionsForUser = async (userId, pocketId = n
     });
 
     const businessPocketIds = businessPockets.map(p => p.id);
-
     if (businessPocketIds.length === 0) return [];
 
     const transactions = await Transaction.findAll({
-      where: {
-        pocket_id: { [Op.in]: businessPocketIds }
-      },
+      where: { pocket_id: { [Op.in]: businessPocketIds } },
       order: [['createdAt', 'DESC']],
       limit: 5
     });
@@ -1001,7 +995,7 @@ module.exports.getLast5BusinessTransactionsForUser = async (userId, pocketId = n
       type: tx.type,
       description: tx.description,
       amount: tx.amount,
-      transaction_type: incomingTypes.includes(tx.type) ? 1 : 0
+      transaction_type: tx.type === 'Income' ? 1 : 0
     }));
 
     return result;
@@ -1009,16 +1003,12 @@ module.exports.getLast5BusinessTransactionsForUser = async (userId, pocketId = n
     logger.error(error.message);
     throw new InternalServerError(error.message);
   }
-}
+};
 
 module.exports.getBusinessPocketTransactionHistory = async (userId, { pocketId = null, duration = '30d' } = {}) => {
   try {
-    const incomeTypes = ["Contribution", "AutoTopUp", "AutoRecurring", "Income", "Topup"];
-
     const pocketWhere = { type: 'business' };
-    if (pocketId) {
-      pocketWhere.id = pocketId;
-    }
+    if (pocketId) pocketWhere.id = pocketId;
 
     const businessPockets = await Pocket.findAll({
       where: pocketWhere,
@@ -1037,20 +1027,13 @@ module.exports.getBusinessPocketTransactionHistory = async (userId, { pocketId =
 
     let fromDate = new Date();
     switch (duration) {
-      case '3m':
-        fromDate = subMonths(fromDate, 3);
-        break;
-      case '6m':
-        fromDate = subMonths(fromDate, 6);
-        break;
-      case '1y':
-        fromDate = subYears(fromDate, 1);
-        break;
+      case '3m': fromDate = subMonths(fromDate, 3); break;
+      case '6m': fromDate = subMonths(fromDate, 6); break;
+      case '1y': fromDate = subYears(fromDate, 1); break;
       case '30d':
-      default:
-        fromDate = subDays(fromDate, 30);
-        break;
+      default: fromDate = subDays(fromDate, 30); break;
     }
+
     fromDate = startOfDay(fromDate);
 
     const transactions = await Transaction.findAll({
@@ -1068,77 +1051,52 @@ module.exports.getBusinessPocketTransactionHistory = async (userId, { pocketId =
 
     return transactions.map(tx => ({
       createdAt: tx.createdAt,
-      initiator_user: tx.initiator ? tx.initiator.name : null,
+      initiator_user: tx.initiator?.name ?? null,
       type: tx.type,
       amount: tx.amount,
-      purpose: tx.purpose,
-      transaction_type: incomeTypes.includes(tx.type) ? 1 : 0
+      description: tx.description,
+      category: tx.category,
+      destination_acc: tx.destination_acc,
+      transaction_type: tx.type === 'Income' ? 1 : 0
     }));
   } catch (error) {
     logger.error(error.message);
     throw new InternalServerError(error.message);
   }
-}
+};
 
 module.exports.getBEP = async (userData, pocketId) => {
   try {
     const [pocket, incomeHistory, expenseHistory, member] = await Promise.all([
       Pocket.findOne({
-        where: {
-          pocket_id: pocketId,
-          type: 'business'
-        },
+        where: { id: pocketId, type: 'business' },
         raw: true
       }),
       Transaction.findAll({
-        where: {
-          pocket_id: pocketId,
-          type: {
-            [Op.in]: ['Payment', 'Income'],
-          }
-        },
-        order: [
-          ['updatedAt', 'DESC'],
-          ['createdAt', 'DESC'],
-        ],
+        where: { pocket_id: pocketId, type: 'Income' },
+        order: [['updatedAt', 'DESC'], ['createdAt', 'DESC']],
         raw: true
       }),
       Transaction.findAll({
-        where: {
-          pocket_id: pocketId,
-          type: {
-            [Op.in]: ['Withdrawal', 'Transfer', 'Expense'],
-          }
-        },
-        order: [
-          ['updatedAt', 'DESC'],
-          ['createdAt', 'DESC'],
-        ],
+        where: { pocket_id: pocketId, type: 'Expense' },
+        order: [['updatedAt', 'DESC'], ['createdAt', 'DESC']],
         raw: true
       }),
       PocketMember.findOne({
         where: {
           pocket_id: pocketId,
           user_id: userData.id,
-          [Op.or]: [
-            { role: 'owner' },
-            { role: 'admin' }
-          ]
+          [Op.or]: [{ role: 'owner' }, { role: 'admin' }]
         },
         raw: true
       })
-    ])
+    ]);
 
-    if (!pocket) {
-      throw new ConflictError('Pocket is not business type');
-    }
-
-    if (!member) {
-      throw new UnauthorizedError("You're not an admin or an owner");
-    }
+    if (!pocket) throw new ConflictError('Pocket is not business type');
+    if (!member) throw new UnauthorizedError("You're not an admin or an owner");
 
     const result = analyzeProfitOrLoss({
-      modalAwal: pocket.target,
+      modalAwal: pocket.target_nominal,
       incomeHistory,
       expenseHistory,
     });
@@ -1151,12 +1109,11 @@ module.exports.getBEP = async (userData, pocketId) => {
       error instanceof ConflictError ||
       error instanceof NotFoundError ||
       error instanceof UnauthorizedError
-    ) {
-      throw error;
-    }
+    ) throw error;
+
     throw new InternalServerError(error.message);
   }
-}
+};
 
 const analyzeProfitOrLoss = ({
   modalAwal,
@@ -1246,7 +1203,7 @@ const groupBy = (items, keyGetter) => {
 
 module.exports.getAllBusinessStats = async (userId, type) => {
   try {
-    if (type !== 'overview' && type !== 'pemasukan' && type !== 'pengeluaran') {
+    if (!['overview', 'pemasukan', 'pengeluaran'].includes(type)) {
       throw new BadRequestError('Unknown type');
     }
 
@@ -1262,7 +1219,6 @@ module.exports.getAllBusinessStats = async (userId, type) => {
     if (!earliestTransaction) return [];
 
     const daysSinceFirst = (Date.now() - new Date(earliestTransaction.createdAt).getTime()) / (1000 * 60 * 60 * 24);
-
     if (daysSinceFirst < 7) return [];
 
     const transactions = await Transaction.findAll({
@@ -1276,10 +1232,9 @@ module.exports.getAllBusinessStats = async (userId, type) => {
 
     if (!transactions.length) return [];
 
-
     const monthly = groupBy(transactions, trx => {
       const date = new Date(trx.createdAt);
-      return `${date.getFullYear()}-${date.getMonth()}`; // '2023-0' (Jan)
+      return `${date.getFullYear()}-${date.getMonth()}`;
     });
 
     const xLabels = [...new Set(Object.keys(monthly).map(k => {
@@ -1292,34 +1247,35 @@ module.exports.getAllBusinessStats = async (userId, type) => {
     for (const trx of transactions) {
       const date = new Date(trx.createdAt);
       const monthKey = `${MONTH_NAMES[date.getMonth()]} ${date.getFullYear()}`;
-      const isIncome = trx.type === 'Topup';
-      const isOutcome = trx.type === 'Transfer' || trx.type === 'Withdraw';
+      const isIncome = trx.type === 'Income';
+      const isOutcome = trx.type === 'Expense';
 
-      if (
-        (type === 'pemasukan' && !isIncome) ||
-        (type === 'pengeluaran' && !isOutcome)
-      ) continue;
+      if ((type === 'pemasukan' && !isIncome) || (type === 'pengeluaran' && !isOutcome)) {
+        continue;
+      }
 
       const labelKey = type === 'overview'
         ? (isIncome ? 'pemasukan' : 'pengeluaran')
         : trx.Pocket?.name;
 
       if (!series[labelKey]) {
-        series[labelKey] = { data: new Array(xLabels.length).fill(0), color: COLOR_PALETTE[Object.keys(series).length % COLOR_PALETTE.length] };
+        series[labelKey] = {
+          data: new Array(xLabels.length).fill(0),
+          color: COLOR_PALETTE[Object.keys(series).length % COLOR_PALETTE.length]
+        };
       }
 
       const xIndex = xLabels.indexOf(monthKey);
       if (xIndex >= 0) {
-        series[labelKey].data[xIndex] += trx.amount;
+        series[labelKey].data[xIndex] += parseFloat(trx.amount);
       }
     }
 
-    const result = [{
+    return [{
       x: xLabels,
       label: type === 'overview' ? 'Ringkasan' : 'Per Pocket',
       series
-    }]
-    return result;
+    }];
   } catch (error) {
     logger.error(error);
     if (
@@ -1332,7 +1288,7 @@ module.exports.getAllBusinessStats = async (userId, type) => {
     }
     throw new InternalServerError(error.message);
   }
-}
+};
 
 module.exports.getPocketBusinessStats = async (userId, type, pocketId) => {
   try {
@@ -1352,7 +1308,6 @@ module.exports.getPocketBusinessStats = async (userId, type, pocketId) => {
     if (!earliestTransaction) return [];
 
     const daysSinceFirst = (Date.now() - new Date(earliestTransaction.createdAt).getTime()) / (1000 * 60 * 60 * 24);
-
     if (daysSinceFirst < 7) return [];
 
     const transactions = await Transaction.findAll({
@@ -1384,11 +1339,14 @@ module.exports.getPocketBusinessStats = async (userId, type, pocketId) => {
 
       for (const trx of transactions) {
         const date = new Date(trx.createdAt);
-        const xIndex = xLabels.indexOf(`${MONTH_NAMES[date.getMonth()]} ${date.getFullYear()}`);
+        const monthLabel = `${MONTH_NAMES[date.getMonth()]} ${date.getFullYear()}`;
+        const xIndex = xLabels.indexOf(monthLabel);
         if (xIndex < 0) continue;
 
-        if (trx.type === 'Topup') series.pemasukan.data[xIndex] += trx.amount;
-        if (trx.type === 'Transfer' || trx.type === 'Withdraw') series.pengeluaran.data[xIndex] += trx.amount;
+        const amount = parseFloat(trx.amount) || 0;
+
+        if (trx.type === 'Income') series.pemasukan.data[xIndex] += amount;
+        if (trx.type === 'Expense') series.pengeluaran.data[xIndex] += amount;
       }
 
       return [{ x: xLabels, label: 'Bulanan', series }];
@@ -1396,8 +1354,8 @@ module.exports.getPocketBusinessStats = async (userId, type, pocketId) => {
 
     if (type === 'tahunan') {
       const yearly = groupBy(transactions, trx => new Date(trx.createdAt).getFullYear());
-
       const xLabels = Object.keys(yearly).sort();
+
       const series = {
         pemasukan: { data: [], color: '#81c784' },
         pengeluaran: { data: [], color: '#ff6384' }
@@ -1405,15 +1363,16 @@ module.exports.getPocketBusinessStats = async (userId, type, pocketId) => {
 
       for (const year of xLabels) {
         const trans = yearly[year];
-        let income = 0, outcome = 0;
+        let income = 0, expense = 0;
 
         for (const trx of trans) {
-          if (trx.type === 'Topup') income += trx.amount;
-          if (trx.type === 'Transfer' || trx.type === 'Withdraw') outcome += trx.amount;
+          const amount = parseFloat(trx.amount) || 0;
+          if (trx.type === 'Income') income += amount;
+          if (trx.type === 'Expense') expense += amount;
         }
 
         series.pemasukan.data.push(income);
-        series.pengeluaran.data.push(outcome);
+        series.pengeluaran.data.push(expense);
       }
 
       return [{ x: xLabels, label: 'Tahunan', series }];
@@ -1432,4 +1391,4 @@ module.exports.getPocketBusinessStats = async (userId, type, pocketId) => {
     }
     throw new InternalServerError(error.message);
   }
-}
+};

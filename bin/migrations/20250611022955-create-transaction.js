@@ -17,13 +17,6 @@ module.exports = {
       },
       type: {
         type: Sequelize.ENUM(
-          'Contribution', 
-          'Withdrawal', 
-          'Payment', 
-          'AutoTopUp', 
-          'AutoRecurring',
-          'Topup',
-          'Transfer',
           'Income',
           'Expense'
         ),
@@ -32,8 +25,20 @@ module.exports = {
       amount: {
         type: Sequelize.DECIMAL
       },
-      purpose: {
+      destination_acc: {
         type: Sequelize.STRING
+      },
+      category: {
+        type: Sequelize.ENUM(
+          'penjualan',
+          'pembelian',
+          'topup',
+          'withdraw',
+          'gaji',
+          'transfer',
+          'autobudget',
+          'lainnya'
+        )
       },
       status: {
         type: Sequelize.STRING

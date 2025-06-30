@@ -32,6 +32,16 @@ module.exports = (sequelize, DataTypes) => {
     recurring_amount: DataTypes.INTEGER,
     treshold_amount: DataTypes.INTEGER,
     status: DataTypes.ENUM('active', 'inactive', 'paused'),
+    category: DataTypes.ENUM(
+      'penjualan',
+      'pembelian',
+      'topup',
+      'withdraw',
+      'gaji',
+      'transfer',
+      'autobudget',
+      'lainnya'
+    ),
     is_active: DataTypes.BOOLEAN,
     schedule_type: DataTypes.STRING,
     schedule_value: DataTypes.INTEGER,

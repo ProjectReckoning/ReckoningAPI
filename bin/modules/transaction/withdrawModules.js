@@ -86,9 +86,10 @@ module.exports.initWithdraw = async (userId, withdrawData) => {
     const transactionData = {
       pocket_id: withdrawData.pocket_id,
       initiator_user_id: userId,
-      type: 'Withdrawal',
+      type: 'Expense',
       amount: withdrawData.balance,
-      purpose: `Withdrawal from ${pocket.name} - ${user.name}`,
+      destination_acc: `BNI - [NO REKENING]`,
+      category: 'withdraw',
       status: 'completed',
       description: null,
       is_business_expense: false,
