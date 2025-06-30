@@ -60,7 +60,7 @@ module.exports.registerPushToken = async (notifData) => {
   }
 }
 
-module.exports.setNotificationData = async ({ pushToken, title, body, data = null }) => {
+module.exports.setNotificationData = ({ pushToken, title, body, data = null }) => {
   const messages = [{
     to: pushToken,
     sound: 'default',
@@ -86,7 +86,7 @@ module.exports.pushNotification = async (messages) => {
 module.exports.getPushToken = async (userId) => {
   mongoDb.setCollection('usersToken');
   const pushEntry = await mongoDb.findOne({ userId: Number(userId) });
-  if (!pushEntry?.expoPushToken) {
+  if (!pushEntry.data?.expoPushToken) {
     throw new ConflictError('No push token registered')
   }
 
