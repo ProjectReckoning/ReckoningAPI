@@ -106,7 +106,7 @@ module.exports.inviteMember = async (userData, additionalMembers, pocketId) => {
 
           await notificationModules.pushNotification(notifMessage);
           mongoDb.setCollection('notifications');
-          await mongoDb.insertOne(notifMessage);
+          await mongoDb.insertOne(notifMessage[0]);
 
           results.push({ user_id: member.user_id, status: 'success' });
         } catch (err) {
