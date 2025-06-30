@@ -85,7 +85,7 @@ module.exports.pushNotification = async (messages) => {
 
 module.exports.getPushToken = async (userId) => {
   mongoDb.setCollection('usersToken');
-  const pushEntry = await mongoDb.findOne({ userId: userId });
+  const pushEntry = await mongoDb.findOne({ userId: Number(userId) });
   if (!pushEntry?.expoPushToken) {
     throw new ConflictError('No push token registered')
   }
