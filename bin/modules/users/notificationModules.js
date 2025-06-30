@@ -90,7 +90,7 @@ module.exports.getPushToken = async (userId) => {
     throw new ConflictError('No push token registered')
   }
 
-  return pushEntry.expoPushToken;
+  return pushEntry.data.expoPushToken;
 }
 
 module.exports.getAllNotif = async (notifData) => {
