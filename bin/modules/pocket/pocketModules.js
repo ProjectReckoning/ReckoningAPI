@@ -290,15 +290,13 @@ module.exports.detailPocket = async (pocketId, userId) => {
     let pengeluaran = 0;
 
     history.forEach((tx) => {
-      tx.transaction_type = ['Contribution', 'Payment', 'Income', 'AutoTopUp', 'AutoRecurring', 'Topup'].includes(tx.type) ? 1 : 0;
-      tx.is_business_expense = tx.is_business_expense || false;
-      tx.amount = parseFloat(tx.amount) || 0;;
-      if (tx.transaction_type === 1) {
+      tx.amount = parseFloat(tx.amount) || 0;
+      if (tx.type === 'Income') {
         pemasukan += tx.amount;
-      } else {
+      } else if (tx.type === 'Expense') {
         pengeluaran += tx.amount;
       }
-    })
+    });
 
     pemasukan = pemasukan.toString();
     pengeluaran = pengeluaran.toString();
@@ -314,12 +312,10 @@ module.exports.detailPocket = async (pocketId, userId) => {
       user_role = selfMember.role;
     }
 
-    // how many members in this pocket
+    // How many members
     const memberCount = plainData.pocketMembers.length;
     let targetNominalMember = Math.floor(plainData.target_nominal / memberCount / 1000) * 1000;
     targetNominalMember = targetNominalMember.toString();
-    // to string
-
 
     // Extract owner and other members
     const ownerMember = plainData.pocketMembers.find(m => m.user_id === plainData.owner_user_id);
@@ -1227,7 +1223,7 @@ module.exports.getAllBusinessStats = async (userId, type) => {
         status: 'completed'
       },
       attributes: ['amount', 'type', 'createdAt', 'pocket_id'],
-      include: [{ model: Pocket, attributes: ['name'] }]
+      include: [{ model: Pocket, as: 'pocket', attributes: ['name'] }]
     });
 
     if (!transactions.length) return [];

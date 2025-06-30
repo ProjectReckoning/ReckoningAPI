@@ -66,6 +66,7 @@ const getAutoBudgets = async (pocketTypeCondition) => {
     include: [
       {
         model: Pocket,
+        as: 'pocket',
         required: true,
         where: pocketTypeCondition
       }
