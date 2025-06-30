@@ -281,7 +281,7 @@ module.exports.detailPocket = async (pocketId, userId) => {
     const last_topup = await Transaction.findOne({
       where: {
         pocket_id: data.id,
-        user_id: userId,
+        initiator_user_id: userId,
         type: 'Income',
         [Op.or]: [
           { category: 'topup' },

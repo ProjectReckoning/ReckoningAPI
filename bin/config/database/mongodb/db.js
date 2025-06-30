@@ -147,29 +147,39 @@ class DB {
   async findAllData(fieldName, row, page, param) {
     const ctx = 'mongodb-findAllData';
     const dbName = await this.getDatabase();
-    // const result = await mongoConnection.getConnection(this.config);
     await this.client.connect();
+
     try {
-      // const cacheConnection = result.data.db;
       const connection = this.client.db(dbName);
       const db = connection.collection(this.collectionName);
+
       const parameterSort = {};
       parameterSort[fieldName] = 1;
-      const parameterPage = row * (page - 1);
-      // const recordset = await db.find(param)
-      const recordset = await db.find(param).sort(parameterSort).limit(row).skip(parameterPage)
+
+      const safeRow = parseInt(row, 10);
+      const safePage = parseInt(page, 10);
+
+      const rowPerPage = Number.isInteger(safeRow) && safeRow > 0 ? safeRow : 20;
+      const pageNum = Number.isInteger(safePage) && safePage > 0 ? safePage : 1;
+
+      const parameterPage = rowPerPage * (pageNum - 1);
+
+      const recordset = await db.find(param)
+        .sort(parameterSort)
+        .limit(rowPerPage)
+        .skip(parameterPage)
         .toArray();
+
       if (validate.isEmpty(recordset)) {
         return wrapper.error('Data Not Found, Please Try Another Input');
       }
+
       return wrapper.data(recordset);
 
     } catch (err) {
-      console.log(err.message, 'Error upsert data in mongodb')
+      console.log(err.message, 'Error upsert data in mongodb');
       return wrapper.error(`Error Mongo ${err.message}`);
     }
-
-
   }
 
   async countData(param) {
