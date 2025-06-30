@@ -81,6 +81,23 @@ module.exports.getAutoBudget = async (req, res) => {
     });
 }
 
+module.exports.deleteAutoBudget = async (req, res) => {
+  const autoBudgetData = {
+    user_id: req.userData.id,
+    pocket_id: req.params.pocketId,
+  }
+
+  autoBudgetModules.deleteAutoBudget(autoBudgetData)
+    .then(resp => {
+      logger.info('Success delete auto budget');
+      wrapper.response(res, 'success', wrapper.data(resp), 'Success delete auto budget', 200);
+    })
+    .catch(err => {
+      logger.error('Error while delete the auto budget', err);
+      wrapper.response(res, 'fail', wrapper.error(err), `Error while delete the auto budget. Error: ${err}`, 400);
+    });
+}
+
 module.exports.initTransfer = async (req, res) => {
   const userData = req.userData;
   const transferData = {

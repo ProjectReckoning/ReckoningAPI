@@ -172,3 +172,32 @@ module.exports.getAutoBudget = async (autoBudgetData) => {
     throw new InternalServerError(error.message);
   }
 }
+
+module.exports.deleteAutoBudget = async (autoBudgetData) => {
+  const { user_id, pocket_id } = autoBudgetData;
+  if (!user_id || !pocket_id) {
+    throw new BadRequestError('user_id and pocket_id are required');
+  }
+
+  try {
+    const existAutoBudget = await AutoBudgeting.findOne({
+      where: {
+        user_id,
+        pocket_id,
+        status: 'active',
+        is_active: true
+      },
+      order: [
+        ['updatedAt', 'DESC']
+        ['createdAt', 'DESC']
+      ]
+    });
+
+    await existAutoBudget.destroy();
+
+    return existAutoBudget;
+  } catch (error) {
+    logger.error(error);
+    throw new InternalServerError(error.message);
+  }
+}
