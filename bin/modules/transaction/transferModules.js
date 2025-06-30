@@ -679,3 +679,95 @@ module.exports.getTransferSchedule = async (userData, pocket_id) => {
     throw new InternalServerError(error.message);
   }
 }
+
+module.exports.getDetailTransferSchedule = async (userData, pocket_id, schedule_id) => {
+  try {
+    const [user, pocket, member] = await Promise.all([
+      User.findByPk(userData.id),
+      Pocket.findOne({
+        where: {
+          id: pocket_id,
+          type: 'business'
+        }
+      }),
+      PocketMember.findOne({
+        where: {
+          user_id: userData.id,
+          pocket_id: pocket_id,
+          [Op.or]: [
+            { role: 'admin' },
+            { role: 'owner' }
+          ]
+        }
+      })
+    ]);
+
+    if (!user || !pocket || !member) {
+      throw new NotFoundError('User/Pocket not found or user is not an admin/owner of this pocket');
+    }
+
+    const scheduleTransfer = await AutoBudgeting.findOne({
+      where: {
+        id: schedule_id,
+        pocket_id: pocket_id,
+        is_active: true
+      },
+      attributes: ['id', 'recurring_amount', 'next_run_date', 'status'],
+      raw: true
+    });
+
+    if (!scheduleTransfer) {
+      throw new NotFoundError('Schedule not found');
+    }
+
+    mongoDb.setCollection('scheduledTransferDate');
+    const mongo = await mongoDb.findOne({ auto_budget_id: scheduleTransfer.id });
+
+    return {
+      ...scheduleTransfer,
+      detail: mongo?.data || null
+    };
+  } catch (error) {
+    logger.error(error);
+    if (
+      error instanceof BadRequestError ||
+      error instanceof ConflictError ||
+      error instanceof NotFoundError
+    ) {
+      throw error;
+    }
+    throw new InternalServerError(error.message);
+  }
+}
+
+module.exports.deleteTransferSchedule = async (userData, pocket_id, schedule_id) => {
+  try {
+    const existAutoBudget = await AutoBudgeting.findOne({
+      where: {
+        id: schedule_id,
+        user_id: userData.id,
+        pocket_id,
+        status: 'active',
+        is_active: true
+      },
+      order: [
+        ['updatedAt', 'DESC'],
+        ['createdAt', 'DESC']
+      ]
+    });
+
+    await existAutoBudget.destroy();
+
+    return existAutoBudget;
+  } catch (error) {
+    logger.error(error);
+    if (
+      error instanceof BadRequestError ||
+      error instanceof ConflictError ||
+      error instanceof NotFoundError
+    ) {
+      throw error;
+    }
+    throw new InternalServerError(error.message);
+  }
+}

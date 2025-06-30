@@ -3290,6 +3290,177 @@ paths:
         "404":
           description: User/Pocket not found or not a business pocket
 
+  /transaction/transfer/schedule/{pocketId}/{scheduleId}:
+    get:
+      summary: Get detail of a scheduled transfer for a business pocket
+      tags:
+        - Transaction
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: pocketId
+          required: true
+          schema:
+            type: integer
+          description: ID of the business pocket
+        - in: path
+          name: scheduleId
+          required: true
+          schema:
+            type: integer
+          description: ID of the scheduled transfer
+      responses:
+        "200":
+          description: Scheduled transfer detail fetched successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      id:
+                        type: integer
+                        example: 12
+                      recurring_amount:
+                        type: number
+                        example: 100000
+                      next_run_date:
+                        type: string
+                        format: date-time
+                        example: 2025-07-15T03:00:00.000Z
+                      status:
+                        type: string
+                        example: active
+                      detail:
+                        type: object
+                        nullable: true
+                        properties:
+                          auto_budget_id:
+                            type: integer
+                            example: 12
+                          destination:
+                            type: string
+                            example: "REKENING SESEORANG"
+                          user_id:
+                            type: integer
+                            example: 2
+                          pocket_id:
+                            type: integer
+                            example: 4
+                          start_date:
+                            type: string
+                            format: date-time
+                            example: 2025-07-01T03:00:00.000Z
+                          end_date:
+                            type: string
+                            format: date-time
+                            example: 2025-12-31T03:00:00.000Z
+                  message:
+                    type: string
+                    example: Transfer schedule has been fetched from pocket
+                  code:
+                    type: integer
+                    example: 200
+        "400":
+          description: Bad request
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden (not admin/owner)
+        "404":
+          description: Schedule not found or user/pocket not found
+
+    delete:
+      summary: Delete a scheduled transfer for a business pocket
+      tags:
+        - Transaction
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: pocketId
+          required: true
+          schema:
+            type: integer
+          description: ID of the business pocket
+        - in: path
+          name: scheduleId
+          required: true
+          schema:
+            type: integer
+          description: ID of the scheduled transfer
+      responses:
+        "200":
+          description: Scheduled transfer deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      id:
+                        type: integer
+                        example: 12
+                      recurring_amount:
+                        type: number
+                        example: 100000
+                      next_run_date:
+                        type: string
+                        format: date-time
+                        example: 2025-07-15T03:00:00.000Z
+                      status:
+                        type: string
+                        example: active
+                      detail:
+                        type: object
+                        nullable: true
+                        properties:
+                          auto_budget_id:
+                            type: integer
+                            example: 12
+                          destination:
+                            type: string
+                            example: "REKENING SESEORANG"
+                          user_id:
+                            type: integer
+                            example: 2
+                          pocket_id:
+                            type: integer
+                            example: 4
+                          start_date:
+                            type: string
+                            format: date-time
+                            example: 2025-07-01T03:00:00.000Z
+                          end_date:
+                            type: string
+                            format: date-time
+                            example: 2025-12-31T03:00:00.000Z
+                  message:
+                    type: string
+                    example: Transfer schedule has been fetched from pocket
+                  code:
+                    type: integer
+                    example: 200
+        "400":
+          description: Bad request
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden (not admin/owner)
+        "404":
+          description: Schedule not found or user/pocket not found
+
 components:
   securitySchemes:
     bearerAuth:

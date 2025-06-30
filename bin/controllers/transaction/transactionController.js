@@ -127,7 +127,7 @@ module.exports.respondTransfer = async (req, res) => {
   }
 
   transferModules.respondTransfer(userData, approvalData)
-    .then(({ result, message}) => {
+    .then(({ result, message }) => {
       logger.info('User has been respond the approval for transation');
       wrapper.response(res, 'success', wrapper.data(result), `User has been respond the approval for transation. ${message}`, 200);
     })
@@ -167,6 +167,38 @@ module.exports.getTransferSchedule = async (req, res) => {
   const pocket_id = req.params.pocketId;
 
   transferModules.getTransferSchedule(userData, pocket_id)
+    .then(resp => {
+      logger.info('Transfer schedule has been fetched from pocket');
+      wrapper.response(res, 'success', wrapper.data(resp), 'Transfer schedule has been fetched from pocket', 200);
+    })
+    .catch(err => {
+      logger.error('Error while fetching transfer schedule from pocket', err);
+      wrapper.response(res, 'fail', wrapper.error(err), `Error while fetching transfer schedule from pocket. Error: ${err}`, 400);
+    });
+}
+
+module.exports.getDetailTransferSchedule = async (req, res) => {
+  const userData = req.userData;
+  const pocket_id = req.params.pocketId;
+  const schedule_id = req.params.schedule_id;
+
+  transferModules.getDetailTransferSchedule(userData, pocket_id, schedule_id)
+    .then(resp => {
+      logger.info('Transfer schedule has been fetched from pocket');
+      wrapper.response(res, 'success', wrapper.data(resp), 'Transfer schedule has been fetched from pocket', 200);
+    })
+    .catch(err => {
+      logger.error('Error while fetching transfer schedule from pocket', err);
+      wrapper.response(res, 'fail', wrapper.error(err), `Error while fetching transfer schedule from pocket. Error: ${err}`, 400);
+    });
+}
+
+module.exports.deleteTransferSchedule = async (req, res) => {
+  const userData = req.userData;
+  const pocket_id = req.params.pocketId;
+  const schedule_id = req.params.schedule_id;
+
+  transferModules.deleteTransferSchedule(userData, pocket_id, schedule_id)
     .then(resp => {
       logger.info('Transfer schedule has been fetched from pocket');
       wrapper.response(res, 'success', wrapper.data(resp), 'Transfer schedule has been fetched from pocket', 200);
