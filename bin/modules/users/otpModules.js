@@ -96,7 +96,7 @@ module.exports.verifyOtp = async (verifyOtpData) => {
     }
     const user = userData.get({ plain: true });
     delete user.password;
-    const token = authModules.generateToken(user);
+    const token = await authModules.generateToken(user);
 
     // Clean up
     await redis.del(`otp:${verifyOtpData.phone_number}:${verifyOtpData.sessionId}`);
