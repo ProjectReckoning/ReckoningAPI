@@ -278,6 +278,24 @@ module.exports.detailPocket = async (pocketId, userId) => {
       ]
     });
 
+    const last_topup = await Transaction.findOne({
+      where: {
+        pocket_id: data.id,
+        user_id: userId,
+        type: 'Income',
+        [Op.or]: [
+          { category: 'topup' },
+          { category: 'autobudget' }
+        ]
+      },
+      order: [
+        ['updatedAt', 'DESC'],
+        ['createdAt', 'DESC']
+      ],
+      attributes: ['updatedAt'],
+      raw: true
+    })
+
     if (!data) return null;
 
     const history = await Transaction.findAll({
@@ -369,6 +387,7 @@ module.exports.detailPocket = async (pocketId, userId) => {
       color_hex: plainData.color_hex,
       account_number: plainData.account_number,
       owner_user_id: plainData.owner_user_id,
+      last_topup,
 
       // Final result
       owner,
@@ -1252,7 +1271,7 @@ module.exports.getAllBusinessStats = async (userId, type) => {
 
       const labelKey = type === 'overview'
         ? (isIncome ? 'pemasukan' : 'pengeluaran')
-        : trx.Pocket?.name;
+        : trx.pocket?.name || 'Unnamed pocket';
 
       if (!series[labelKey]) {
         series[labelKey] = {
