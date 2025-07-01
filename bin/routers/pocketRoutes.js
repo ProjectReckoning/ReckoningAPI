@@ -76,7 +76,7 @@ router.get(
 );
 
 // Router delete member from pocket
-router.delete(
+router.post(
   "/:pocketId/members",
   userAuth.authenticateToken,
   pocketController.deletePocketMember

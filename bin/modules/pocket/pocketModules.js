@@ -702,8 +702,9 @@ module.exports.getMembersOfPocket = async (pocketId, userId) => {
 };
 
 module.exports.deletePocketMember = async (pocketId, userId, memberList) => {
+  const t = await sequelize.transaction();
   try {
-    // Cek apakah userId merupakan anggota dari pocket
+    // Validate permission of current user
     const isMember = await PocketMember.findOne({
       where: {
         pocket_id: pocketId,
@@ -711,29 +712,84 @@ module.exports.deletePocketMember = async (pocketId, userId, memberList) => {
       },
     });
 
-    if (
-      !isMember ||
-      (isMember?.role !== "owner" && isMember?.role !== "admin")
-    ) {
+    if (!isMember || (isMember.role !== "owner" && isMember.role !== "admin")) {
       throw new ForbiddenError("You do not have access to this pocket");
     }
 
-    // Hapus anggota yang ada di memberList
-    const deletedMembers = await PocketMember.destroy({
-      where: {
+    const pocket = await Pocket.findByPk(pocketId);
+    if (!pocket) {
+      throw new NotFoundError("Pocket not found");
+    }
+
+    let totalDeleted = 0;
+
+    for (const memberId of memberList) {
+      const [member, mock] = await Promise.all([
+        PocketMember.findOne({
+          where: {
+            user_id: memberId,
+            pocket_id: pocketId,
+          },
+        }),
+        MockSavingsAccount.findOne({
+          where: { user_id: memberId },
+        }),
+      ]);
+
+      if (!member) {
+        continue; // Skip if member is not found in this pocket
+      }
+
+      // Reduce balances
+      if (mock) {
+        mock.earmarked_balance -= member.contribution_amount;
+        if (mock.earmarked_balance < 0) mock.earmarked_balance = 0;
+        await mock.save({ transaction: t });
+      }
+
+      pocket.current_balance -= member.contribution_amount;
+      if (pocket.current_balance < 0) pocket.current_balance = 0;
+
+      const transactionData = {
         pocket_id: pocketId,
-        user_id: memberList,
-      },
-    });
-    // console.log("Deleted members count:", deletedMembers);
-    if (deletedMembers === 0) {
+        initiator_user_id: memberId,
+        type: 'Expense',
+        amount: member.contribution_amount,
+        destination_acc: 'BNI - [NO REKENING]',
+        category: `lainnya`,
+        status: 'completed',
+        description: null,
+        is_business_expense: false,
+      }
+
+      await Transaction.create(transactionData, { transaction: t });
+
+      // Delete member
+      const deletedCount = await PocketMember.destroy({
+        where: {
+          pocket_id: pocketId,
+          user_id: memberId,
+        },
+        transaction: t,
+      });
+
+      totalDeleted += deletedCount;
+    }
+
+    await pocket.save({ transaction: t });
+
+    if (totalDeleted === 0) {
       throw new NotFoundError("No members found to delete");
     }
+
+    await t.commit();
+
     return {
       message: "Members deleted successfully",
-      count: deletedMembers,
+      count: totalDeleted,
     };
   } catch (error) {
+    await t.rollback();
     if (error instanceof NotFoundError || error instanceof ForbiddenError) {
       throw error;
     }
@@ -743,6 +799,7 @@ module.exports.deletePocketMember = async (pocketId, userId, memberList) => {
 
 
 module.exports.leavePocket = async (pocketId, userId) => {
+  const t = await sequelize.transaction();
   try {
     console.log("Leaving pocket:", pocketId, "for user:", userId);
 
@@ -753,6 +810,19 @@ module.exports.leavePocket = async (pocketId, userId) => {
       },
     })
 
+    const [mock, pocket] = await Promise.all([
+      MockSavingsAccount.findOne({
+        where: {
+          user_id: userId
+        }
+      }),
+      Pocket.findOne({
+        where: {
+          pocket_id: pocketId
+        }
+      })
+    ])
+
     if (!member) {
       throw new NotFoundError("You are not a member of this pocket");
     }
@@ -761,20 +831,42 @@ module.exports.leavePocket = async (pocketId, userId) => {
       throw new BadRequestError("Owner pocket cannot leave the pocket, owner just can delete the pocket");
     }
 
+    // Kurangin earmarked_balance dari mock
+    mock.earmarked_balance -= member.contribution_amount;
+    if (mock.earmarked_balance < 0) mock.earmarked_balance = 0;
+    await mock.save({ transaction: t });
+
+    // kurangin current balance di pocket
+    pocket.current_balance -= member.contribution_amount;
+    if (pocket.current_balance < 0) pocket.current_balance = 0;
+    await pocket.save({ transaction: t });
+
+    const transactionData = {
+      pocket_id: pocketId,
+      initiator_user_id: userId,
+      type: 'Expense',
+      amount: member.contribution_amount,
+      destination_acc: 'BNI - [NO REKENING]',
+      category: `lainnya`,
+      status: 'completed',
+      description: null,
+      is_business_expense: false,
+    }
+
+    await Transaction.create(transactionData, { transaction: t });
+
     // Hapus diri sendiri dari pocket
     const deletedCount = await PocketMember.destroy({
       where: {
         pocket_id: pocketId,
         user_id: userId,
-      }
+      },
+      transaction: t
     })
 
     return {
       message: "You have left the pocket successfully"
     };
-
-
-
   } catch (error) {
     logger.error(error);
     throw new InternalServerError(error.message);
@@ -1047,6 +1139,7 @@ module.exports.getBusinessPocketTransactionHistory = async (userId, { pocketId =
     const pocketWhere = { type: 'business' };
     if (pocketId) pocketWhere.id = pocketId;
 
+    // 1. Get all business pockets the user is a member of
     const businessPockets = await Pocket.findAll({
       where: pocketWhere,
       include: [{
@@ -1062,6 +1155,7 @@ module.exports.getBusinessPocketTransactionHistory = async (userId, { pocketId =
     const businessPocketIds = businessPockets.map(p => p.id);
     if (businessPocketIds.length === 0) return [];
 
+    // 2. Calculate start date based on duration
     let fromDate = new Date();
     switch (duration) {
       case '3m': fromDate = subMonths(fromDate, 3); break;
@@ -1070,9 +1164,9 @@ module.exports.getBusinessPocketTransactionHistory = async (userId, { pocketId =
       case '30d':
       default: fromDate = subDays(fromDate, 30); break;
     }
-
     fromDate = startOfDay(fromDate);
 
+    // 3. Get transactions within the duration
     const transactions = await Transaction.findAll({
       where: {
         pocket_id: { [Op.in]: businessPocketIds },
@@ -1086,16 +1180,53 @@ module.exports.getBusinessPocketTransactionHistory = async (userId, { pocketId =
       order: [['createdAt', 'DESC']]
     });
 
-    return transactions.map(tx => ({
-      createdAt: tx.createdAt,
-      initiator_user: tx.initiator?.name ?? null,
-      type: tx.type,
-      amount: tx.amount,
-      description: tx.description,
-      category: tx.category,
-      destination_acc: tx.destination_acc,
-      transaction_type: tx.type === 'Income' ? 1 : 0
-    }));
+    // 4. Get previous transactions to calculate saldoKemarin
+    const previousTransactions = await Transaction.findAll({
+      where: {
+        pocket_id: { [Op.in]: businessPocketIds },
+        createdAt: { [Op.lt]: fromDate }
+      }
+    });
+
+    let saldoKemarin = 0;
+    previousTransactions.forEach(tx => {
+      const isIncoming = tx.type === 'Income';
+      const amount = parseFloat(tx.amount) || 0;
+      saldoKemarin += isIncoming ? amount : -amount;
+    });
+
+    // 5. Calculate pemasukan, pengeluaran
+    let pemasukan = 0;
+    let pengeluaran = 0;
+
+    const mappedTransactions = transactions.map(tx => {
+      const amount = parseFloat(tx.amount) || 0;
+      const isIncoming = tx.type === 'Income';
+
+      if (isIncoming) pemasukan += amount;
+      else pengeluaran += amount;
+
+      return {
+        createdAt: tx.createdAt,
+        initiator_user: tx.initiator?.name ?? null,
+        type: tx.type,
+        amount: tx.amount,
+        description: tx.description,
+        category: tx.category,
+        destination_acc: tx.destination_acc,
+        transaction_type: isIncoming ? 1 : 0
+      };
+    });
+
+    const saldoPenutupan = saldoKemarin + pemasukan - pengeluaran;
+
+    return {
+      saldoKemarin: saldoKemarin.toString(),
+      saldoPenutupan: saldoPenutupan.toString(),
+      pemasukan: pemasukan.toString(),
+      pengeluaran: pengeluaran.toString(),
+      transactions: mappedTransactions
+    };
   } catch (error) {
     logger.error(error.message);
     throw new InternalServerError(error.message);
