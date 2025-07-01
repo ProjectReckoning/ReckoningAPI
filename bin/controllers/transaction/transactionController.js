@@ -143,7 +143,7 @@ module.exports.setTransferSchedule = async (req, res) => {
     pocket_id: req.body.pocket_id,
     balance: req.body.balance,
     destination: req.body.destination,
-    category: req.bod.category,
+    category: req.body.category,
     date: new Date(req.body.date).getDate(),
     month_start: new Date(req.body.start).getMonth(),
     year_start: new Date(req.body.start).getFullYear(),

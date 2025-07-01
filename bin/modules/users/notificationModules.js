@@ -121,8 +121,10 @@ module.exports.getDetailNotif = async (notifData) => {
     mongoDb.setCollection('notifications');
     const notif = await mongoDb.findOne({
       _id: new ObjectId(notifData.notifId),
-      user_id: notifData.userId,
+      'data.user_id': Number(notifData.userId),
     })
+    logger.info(notif);
+    logger.info(notifData)
 
     if (!notif.data) {
       throw new NotFoundError('Notification not found');
