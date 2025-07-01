@@ -194,7 +194,7 @@ module.exports.initTransfer = async (userData, transferData) => {
           transaction_id: result.id,
           amount,
           pocket: pocket.get({ plain: true }),
-          user_id: member.user_id,
+          user_id: user_id,
           transaction_detail: result
         }
 
@@ -388,6 +388,7 @@ module.exports.respondTransfer = async (userData, approvalData) => {
           date: new Date.now(),
           type: 'information',
           message: `${userData.name} rejected your request. Transaction has been cancelled.`,
+          user_id: transactionData.initiator_user_id
         }
         const pushToken = await notificationModules.getPushToken(transactionData.initiator_user_id);
         const notifMessage = notificationModules.setNotificationData({
@@ -399,7 +400,7 @@ module.exports.respondTransfer = async (userData, approvalData) => {
         await notificationModules.pushNotification(notifMessage);
 
         mongoDb.setCollection('notifications');
-        await mongoDb.insertOne(notifMessage);
+        await mongoDb.insertOne(notifMessage[0]);
       } catch (error) {
         logger.info('Transaction has been rejected');
       }
@@ -424,6 +425,7 @@ module.exports.respondTransfer = async (userData, approvalData) => {
           date: new Date.now(),
           type: 'information',
           message: `${userData.name} accepted your request. Transaction has been done.`,
+          user_id: transactionData.initiator_user_id
         }
         const pushToken = await notificationModules.getPushToken(transactionData.initiator_user_id);
         const notifMessage = notificationModules.setNotificationData({
@@ -435,7 +437,7 @@ module.exports.respondTransfer = async (userData, approvalData) => {
         await notificationModules.pushNotification(notifMessage);
 
         mongoDb.setCollection('notifications');
-        await mongoDb.insertOne(notifMessage);
+        await mongoDb.insertOne(notifMessage[0]);
       } catch (error) {
         logger.info('Transaction has been accepted');
       }

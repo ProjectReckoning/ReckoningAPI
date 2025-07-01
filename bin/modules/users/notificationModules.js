@@ -97,7 +97,7 @@ module.exports.getAllNotif = async (notifData) => {
   try {
     mongoDb.setCollection('notifications');
     const notif = await mongoDb.findAllData({
-      user_id: notifData.userId
+      'data.user_id': notifData.userId
     })
 
     if (!notif.data) {

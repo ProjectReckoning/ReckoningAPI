@@ -199,7 +199,7 @@ module.exports.respondInvite = async (userData, responseData) => {
         date: new Date(),
         type: 'information',
         message: `${userData.name} already ${responseData.response} your invitation to pocket ${pocket.name}`,
-        user_id: member.user_id
+        user_id: invitation.data.inviterUserId
       }
       const pushToken = await notificationModules.getPushToken(invitation.data.inviterUserId);
       const notifMessage = notificationModules.setNotificationData({
@@ -630,7 +630,7 @@ module.exports.bulkAddMembersToPocket = async (userData, pocketId, memberDataArr
         await notificationModules.pushNotification(notifMessage);
 
         mongoDb.setCollection('notifications');
-        await mongoDb.insertOne(notifMessage);
+        await mongoDb.insertOne(notifMessage[0]);
       }))
     } catch (error) {
       addonMessage = 'Pocket creation success but some or all invite friend failed'
