@@ -65,13 +65,13 @@ module.exports.inviteMember = async (userData, additionalMembers, pocketId) => {
     const inviteDataList = [];
 
     if (Array.isArray(additionalMembers) && additionalMembers.length > 0) {
-      mongoDb.setCollection('invitationStatus');
-
+      
       for (const member of additionalMembers) {
         try {
           const userMember = await User.findOne({ where: { id: member.user_id } });
           if (!userMember) throw new NotFoundError(`User ${member.user_id} not found`);
-
+          
+          mongoDb.setCollection('invitationStatus');
           const inviteData = await mongoDb.insertOne({
             type: 'pocket_invite',
             inviterUserId: userData.id,
@@ -406,7 +406,7 @@ module.exports.detailPocket = async (pocketId, userId) => {
 
 module.exports.getUserPockets = async (userId) => {
   try {
-    const data = await Pocket.findAll({
+    const pockets = await Pocket.findAll({
       include: [
         {
           model: PocketMember,
@@ -417,11 +417,32 @@ module.exports.getUserPockets = async (userId) => {
       ],
     });
 
-    if (!data || data.length === 0) {
-      throw new NotFoundError("No pockets found for this user");
-    }
+    const enrichedPockets = await Promise.all(pockets.map(async (pocket) => {
+      const history = await Transaction.findAll({
+        where: { pocket_id: pocket.id },
+        order: [["createdAt", "DESC"]],
+      });
 
-    return data;
+      let pemasukan = 0;
+      let pengeluaran = 0;
+
+      history.forEach((tx) => {
+        const amount = parseFloat(tx.amount) || 0;
+        if (tx.type === 'Income') {
+          pemasukan += amount;
+        } else if (tx.type === 'Expense') {
+          pengeluaran += amount;
+        }
+      });
+
+      return {
+        ...pocket.get({ plain: true }),
+        pemasukan: pemasukan.toString(),
+        pengeluaran: pengeluaran.toString(),
+      };
+    }));
+
+    return enrichedPockets;
   } catch (error) {
     throw new InternalServerError(error.message);
   }

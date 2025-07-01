@@ -96,7 +96,7 @@ module.exports.getPushToken = async (userId) => {
 module.exports.getAllNotif = async (notifData) => {
   try {
     mongoDb.setCollection('notifications');
-    const notif = await mongoDb.findAllData({
+    const notif = await mongoDb.findMany({
       'data.user_id': notifData.userId
     })
 

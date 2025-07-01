@@ -25,7 +25,9 @@ module.exports.getBusinessPockets = async (req, res) => {
             icon_name: item.icon_name,
             color_hex: item.color_hex,
             account_number: item.account_number,
-            user_role: item.pocketMembers?.[0]?.role
+            user_role: item.pocketMembers?.[0]?.role,
+            pemasukan: item.pemasukan,
+            pengeluaran: item.pengeluaran
           });
         }
       });
