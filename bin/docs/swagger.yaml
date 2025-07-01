@@ -3351,6 +3351,7 @@ paths:
         "404":
           description: User/Pocket not found or user is not a member of that pocket
 
+  /transaction/transfer/schedule/{pocketId}:
     get:
       summary: Get all active scheduled transfers for a business pocket (admin/owner only)
       tags:
@@ -3361,7 +3362,7 @@ paths:
         required: false
       parameters:
         - in: path
-          name: pocket_id
+          name: pocketId
           required: true
           schema:
             type: integer
