@@ -4,7 +4,7 @@ const {
   BadRequestError,
   ForbiddenError,
 } = require("../../helpers/error");
-const { MockSavingsAccount, Friendship, User } = require("../../models");
+const { MockSavingsAccount, Friendship, User, sequelize } = require("../../models");
 const logger = require("../../helpers/utils/logger");
 const { where, Op } = require("sequelize");
 
@@ -82,6 +82,80 @@ module.exports.sendBulkFriendshipRequest = async (
       skipped: Array.from(alreadyRequestedIds),
     };
   } catch (error) {
+    if (error instanceof BadRequestError || error instanceof NotFoundError) {
+      throw error;
+    }
+    throw new InternalServerError(error.message);
+  }
+};
+
+module.exports.addFriends = async (userData, phone_numbers) => {
+  const t = await sequelize.transaction();
+  try {
+    if (!Array.isArray(phone_numbers) || phone_numbers.length === 0) {
+      throw new BadRequestError("Target user phone numbers must be a non-empty array");
+    }
+
+    const user = await User.findByPk(userData.id);
+    if (!user) {
+      throw new NotFoundError("Requesting user not found");
+    }
+
+    // Find all users with the given phone numbers
+    const targetUsers = await User.findAll({
+      where: {
+        phone_number: { [Op.in]: phone_numbers },
+      },
+      raw: true,
+    });
+
+    if (targetUsers.length === 0) {
+      throw new NotFoundError("None of the phone numbers exist in the system");
+    }
+
+    const targetPhoneToUser = new Map(
+      targetUsers.map(user => [user.phone_number, user])
+    );
+
+    const validPhoneNumbers = phone_numbers.filter(phone => targetPhoneToUser.has(phone));
+    const targetUserIds = validPhoneNumbers.map(phone => targetPhoneToUser.get(phone).id);
+
+    // Check for existing friendships
+    const existingFriendships = await Friendship.findAll({
+      where: {
+        [Op.or]: targetUserIds.flatMap(friendId => ([
+          { user_id_1: user.id, user_id_2: friendId },
+          { user_id_1: friendId, user_id_2: user.id },
+        ])),
+      },
+      raw: true,
+    });
+
+    const alreadyFriendIds = new Set(
+      existingFriendships.map(f =>
+        f.user_id_1 === user.id ? f.user_id_2 : f.user_id_1
+      )
+    );
+
+    const newFriends = targetUsers.filter(friend => !alreadyFriendIds.has(friend.id));
+
+    for (const friend of newFriends) {
+      await Friendship.create({
+        status: 'accepted',
+        user_id_1: Number(user.id),
+        user_id_2: Number(friend.id),
+        accepted_at: new Date(),
+      }, { transaction: t });
+    }
+
+    await t.commit();
+
+    return {
+      added: newFriends.map(f => f.phone_number),
+      skipped: validPhoneNumbers.filter(pn => !newFriends.some(f => f.phone_number === pn)),
+    };
+  } catch (error) {
+    await t.rollback();
     if (error instanceof BadRequestError || error instanceof NotFoundError) {
       throw error;
     }

@@ -1,6 +1,7 @@
 const express = require("express");
 const friendshipController = require("../controllers/friendship/friendshipControllers");
 const userAuth = require("../middlewares/userAuth");
+// const validate = require('../middlewares/validator/validate');
 
 const router = express.Router();
 
@@ -15,7 +16,7 @@ router.get(
 router.post(
   "/request",
   userAuth.authenticateToken,
-  friendshipController.sendFriendshipRequest
+  friendshipController.addFriends
 );
 
 // Route to handle friendship request actions (accept/reject)

@@ -36,6 +36,21 @@ module.exports.sendFriendshipRequest = async (req, res) => {
   }
 }
 
+module.exports.addFriends = async (req, res) => {
+  const userData = req.userData;
+  const phone_numbers = req.body.phone_numbers;
+
+  friendshipModules.addFriends(userData, phone_numbers)
+    .then(resp => {
+      logger.info('Friends has been added');
+      wrapper.response(res, 'success', wrapper.data(resp), 'Friends has been added', 201);
+    })
+    .catch(err => {
+      logger.error('Error while adding friends', err);
+      wrapper.response(res, 'fail', wrapper.error(err), `Error while adding friends. Error: ${err}`, 400);
+    });
+}
+
 module.exports.handleFriendshipRequest = async (req, res) => {
   const receiverUserId = req.userData.id;
   const { requestId } = req.params;

@@ -2380,7 +2380,7 @@ paths:
 
   /friendship/request:
     post:
-      summary: Send friendship requests to multiple users
+      summary: Send friendship requests to multiple users by user phone numbers
       tags:
         - Friendship
       security:
@@ -2392,17 +2392,18 @@ paths:
             schema:
               type: object
               required:
-                - user_ids
+                - phone_numbers
               properties:
-                user_ids:
+                phone_numbers:
                   type: array
                   items:
-                    type: integer
-                  example: [4, 5, 6, 7]
-                  description: Array of user IDs to send friend requests to
+                    type: string
+                  example: ['6281234567890', '6281234567891']
+            example:
+              phone_numbers: ['6281234567890', '6281234567891']
       responses:
         "200":
-          description: Friendship requests sent successfully
+          description: Friendship requests sent
           content:
             application/json:
               schema:
@@ -2411,16 +2412,45 @@ paths:
                   ok:
                     type: boolean
                     example: true
+                  data:
+                    type: object
+                    properties:
+                      message:
+                        type: string
+                        example: Friendship requests sent
+                      added:
+                        type: array
+                        items:
+                          type: string
+                        example: ["6281219461153"]
+                      skipped:
+                        type: array
+                        items:
+                          type: string
+                        example: []
                   message:
                     type: string
-                    example: "Friendship requests sent successfully"
+                    example: Friendship requests sent
                   code:
                     type: integer
                     example: 200
+              examples:
+                success:
+                  value:
+                    ok: true
+                    data:
+                      message: Friendship requests sent
+                      added:
+                        - "6281219461153"
+                      skipped: []
+                    message: Friendship requests sent
+                    code: 200
         "400":
-          description: Bad request
+          description: Bad request (invalid input or all users already friends)
         "401":
           description: Unauthorized
+        "404":
+          description: None of the target users exist
     get:
       summary: Get all friendship requests (sent and received)
       tags:
