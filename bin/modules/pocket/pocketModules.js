@@ -91,8 +91,8 @@ module.exports.inviteMember = async (userData, additionalMembers, pocketId) => {
               id: userData.id,
               name: userData.name
             },
-            pocket,
-            inviteData,
+            pocket: pocket.get({ plain: true }),
+            inviteData: inviteData.data,
             user_id: member.user_id
           };
 
@@ -169,8 +169,9 @@ module.exports.respondInvite = async (userData, responseData) => {
     }
 
     // Add user as PocketMember
+    let member;
     if (responseData.response === 'accepted') {
-      const member = await PocketMember.create({
+      member = await PocketMember.create({
         user_id: invitation.data.invitedUserId,
         pocket_id: invitation.data.pocketId,
         role: role,
@@ -182,8 +183,6 @@ module.exports.respondInvite = async (userData, responseData) => {
       result.message = 'User has respond the invitation. Response: ACCEPTED';
       result.member = member;
     }
-
-    await t.commit();
 
     await mongoDb.upsertOne({
       _id: new ObjectId(responseData.inviteId)
@@ -197,7 +196,7 @@ module.exports.respondInvite = async (userData, responseData) => {
     try {
       // Send notification will be here
       const notifData = {
-        date: new Date.now(),
+        date: new Date(),
         type: 'information',
         message: `${userData.name} already ${responseData.response} your invitation to pocket ${pocket.name}`,
         user_id: member.user_id
@@ -213,10 +212,12 @@ module.exports.respondInvite = async (userData, responseData) => {
       await notificationModules.pushNotification(notifMessage);
 
       mongoDb.setCollection('notifications');
-      await mongoDb.insertOne(notifMessage);
+      await mongoDb.insertOne(notifMessage[0]);
     } catch (error) {
-      logger.error('Notification failed to send');
+      logger.error('Notification failed to send', error);
     }
+
+    await t.commit();
 
     return result;
   } catch (error) {
@@ -490,6 +491,27 @@ module.exports.updatePocket = async (pocketId, userId, updateData) => {
       throw new ForbiddenError("You do not have permission to update this pocket");
     }
 
+    if (updateData.type) {
+      let target, deadline;
+      if (updateData.type === "saving") {
+        target = updateData.target_nominal ? parseFloat(updateData.target_nominal) : 10000;
+        if (updateData.deadline) {
+          deadline = new Date(updateData.deadline);
+        } else {
+          const now = new Date();
+          deadline = new Date(now.setMonth(now.getMonth() + 6));
+        }
+      } else if (updateData.type === "spending") {
+        target = 0;
+        deadline = null;
+      } else {
+        target = updateData.target_nominal ? parseFloat(updateData.target_nominal) : 0;
+        deadline = updateData.deadline ? new Date(updateData.deadline) : null;
+      }
+      updateData.target_nominal = target;
+      updateData.deadline = deadline;
+    }
+
     await pocket.update(updateData);
 
     return pocket;
@@ -593,8 +615,8 @@ module.exports.bulkAddMembersToPocket = async (userData, pocketId, memberDataArr
             id: userData.id,
             name: userData.name
           },
-          pocket,
-          inviteData,
+          pocket: pocket.get({ plain: true }),
+          inviteData: inviteData.data,
           user_id: member.user_id
         }
         const pushToken = await notificationModules.getPushToken(member.user_id);

@@ -170,7 +170,7 @@ module.exports.initTransfer = async (userData, transferData) => {
       }
       mongoDb.setCollection('pocketSplitResult');
       const splitData = await mongoDb.insertOne(pocketSplitData);
-
+      result = result.get({ plain: true });
       result.splitData = splitData.data.splitResult;
 
       // Send approval notification
@@ -193,7 +193,7 @@ module.exports.initTransfer = async (userData, transferData) => {
           },
           transaction_id: result.id,
           amount,
-          pocket,
+          pocket: pocket.get({ plain: true }),
           user_id: member.user_id,
           transaction_detail: result
         }
@@ -209,12 +209,12 @@ module.exports.initTransfer = async (userData, transferData) => {
         await notificationModules.pushNotification(notifMessage);
 
         mongoDb.setCollection('notifications');
-        await mongoDb.insertOne(notifMessage);
+        await mongoDb.insertOne(notifMessage[0]);
       }
     }
 
     await t.commit();
-    return result;
+    return result.get?.({ plain: true }) || result;
   } catch (error) {
     await t.rollback();
     logger.error(error);

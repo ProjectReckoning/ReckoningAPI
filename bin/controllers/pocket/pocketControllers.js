@@ -9,12 +9,29 @@ module.exports.createPocket = async (req, res) => {
 
   const membersFromRequest = req.body.members || [];
 
+  let target, deadline;
+  if (req.body.type === "saving") {
+    target = req.body.target_nominal ? parseFloat(req.body.target_nominal) : 10000;
+    if (req.body.deadline) {
+      deadline = new Date(req.body.deadline);
+    } else {
+      const now = new Date();
+      deadline = new Date(now.setMonth(now.getMonth() + 6));
+    }
+  } else if (req.body.type === "spending") {
+    target = 0;
+    deadline = null;
+  } else {
+    target = req.body.target_nominal ? parseFloat(req.body.target_nominal) : 0;
+    deadline = req.body.deadline ? new Date(req.body.deadline) : null;
+  }
+
   const pocketData = {
     name: req.body.name,
     type: req.body.type,
-    target_nominal: parseFloat(req.body.target_nominal),
+    target_nominal: parseFloat(target),
     current_balance: 0,
-    deadline: req.body.deadline ? new Date(req.body.deadline) : null,
+    deadline,
     status: req.body.status,
     owner_user_id: req.userData.id,
     icon_name: req.body.icon_name,
@@ -45,7 +62,7 @@ module.exports.createPocket = async (req, res) => {
 module.exports.respondInvite = async (req, res) => {
   const respondData = {
     inviteId: req.body.inviteId,
-    respose: req.body.respose ? req.body.response : 'pending',
+    response: req.body.response ? req.body.response : 'pending',
   }
 
   const userData = req.userData;

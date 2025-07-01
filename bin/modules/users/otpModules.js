@@ -43,13 +43,13 @@ module.exports.requestOtp = async (reqOtpData) => {
     // Get push token
     mongoDb.setCollection('usersToken');
     const pushEntry = await mongoDb.findOne({ userId: user.id });
-    if (!pushEntry?.expoPushToken) {
+    if (!pushEntry.data?.expoPushToken) {
       throw new ConflictError('No push token registered')
     }
 
     // Send notification
     const messages = [{
-      to: pushEntry.expoPushToken,
+      to: pushEntry.data.expoPushToken,
       sound: 'default',
       title: 'Your OTP Code to login in website',
       body: `Your OTP is ${otp}`,
