@@ -96,7 +96,7 @@ module.exports.addFriends = async (userData, phone_numbers) => {
       throw new BadRequestError("Target user phone numbers must be a non-empty array");
     }
 
-    const user = await User.findByPk(userData.id);
+    const user = await User.findByPk(userData.id, { transaction: t });
     if (!user) {
       throw new NotFoundError("Requesting user not found");
     }
@@ -107,6 +107,7 @@ module.exports.addFriends = async (userData, phone_numbers) => {
         phone_number: { [Op.in]: phone_numbers },
       },
       raw: true,
+      transaction: t
     });
 
     if (targetUsers.length === 0) {
@@ -129,6 +130,7 @@ module.exports.addFriends = async (userData, phone_numbers) => {
         ])),
       },
       raw: true,
+      transaction: t
     });
 
     const alreadyFriendIds = new Set(
@@ -328,50 +330,49 @@ module.exports.getFriendship = async (userId) => {
 
 
 module.exports.deleteFriendship = async (requestId, userId) => {
-    try {
-        const friendship = await Friendship.findOne({
-        where: {
-            id: requestId,
-            [Op.or]: [
-            { user_id_1: userId },
-            { user_id_2: userId },
-            ],
-        },
-        });
-    
-        if (!friendship) {
-        throw new NotFoundError("Friendship not found or you do not have access to it");
-        }
-    
-        await friendship.destroy();
-        return { message: "Friendship deleted successfully" };
-    } catch (error) {
-        if (error instanceof NotFoundError) {
-        throw error;
-        }
-        throw new InternalServerError(error.message);
+  try {
+    const friendship = await Friendship.findOne({
+      where: {
+        id: requestId,
+        [Op.or]: [
+          { user_id_1: userId },
+          { user_id_2: userId },
+        ],
+      },
+    });
+
+    if (!friendship) {
+      throw new NotFoundError("Friendship not found or you do not have access to it");
     }
+
+    await friendship.destroy();
+    return { message: "Friendship deleted successfully" };
+  } catch (error) {
+    if (error instanceof NotFoundError) {
+      throw error;
+    }
+    throw new InternalServerError(error.message);
+  }
 }
 
 module.exports.cancelFriendshipRequest = async (requestId, senderUserId) => {
-    try {
-      const friendship = await Friendship.findOne({
-        where: {
-          id: requestId,
-          user_id_1: senderUserId,
-          status: "pending"
-        },
-      });
-  
-      if (!friendship) {
-        throw new NotFoundError("Request not found or already accepted/rejected");
-      }
-  
-      await friendship.destroy();
-      return { message: "Friendship request cancelled" };
-    } catch (error) {
-      if (error instanceof NotFoundError) throw error;
-      throw new InternalServerError(error.message);
+  try {
+    const friendship = await Friendship.findOne({
+      where: {
+        id: requestId,
+        user_id_1: senderUserId,
+        status: "pending"
+      },
+    });
+
+    if (!friendship) {
+      throw new NotFoundError("Request not found or already accepted/rejected");
     }
-  };
-  
+
+    await friendship.destroy();
+    return { message: "Friendship request cancelled" };
+  } catch (error) {
+    if (error instanceof NotFoundError) throw error;
+    throw new InternalServerError(error.message);
+  }
+};

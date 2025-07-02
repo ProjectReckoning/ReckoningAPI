@@ -42,7 +42,7 @@ module.exports.requestOtp = async (reqOtpData) => {
 
     // Get push token
     mongoDb.setCollection('usersToken');
-    const pushEntry = await mongoDb.findOne({ userId: user.id });
+    const pushEntry = await mongoDb.findOne({ userId: Number(user.id) });
     if (!pushEntry.data?.expoPushToken) {
       throw new ConflictError('No push token registered')
     }

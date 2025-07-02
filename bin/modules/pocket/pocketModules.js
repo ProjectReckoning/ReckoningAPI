@@ -65,12 +65,12 @@ module.exports.inviteMember = async (userData, additionalMembers, pocketId) => {
     const inviteDataList = [];
 
     if (Array.isArray(additionalMembers) && additionalMembers.length > 0) {
-      
+
       for (const member of additionalMembers) {
         try {
           const userMember = await User.findOne({ where: { id: member.user_id } });
           if (!userMember) throw new NotFoundError(`User ${member.user_id} not found`);
-          
+
           mongoDb.setCollection('invitationStatus');
           const inviteData = await mongoDb.insertOne({
             type: 'pocket_invite',
@@ -150,10 +150,11 @@ module.exports.respondInvite = async (userData, responseData) => {
       where: {
         user_id: invitation.data.invitedUserId,
         pocket_id: invitation.data.pocketId
-      }
+      },
+      transaction: t
     });
 
-    const pocket = await Pocket.findByPk(invitation.data.pocketId);
+    const pocket = await Pocket.findByPk(invitation.data.pocketId, { transaction: t });
 
     if (pocketMember) {
       throw new ConflictError('User already in the pocket');
@@ -184,12 +185,24 @@ module.exports.respondInvite = async (userData, responseData) => {
       result.member = member;
     }
 
+    const new_updated_at = new Date();
     await mongoDb.upsertOne({
       _id: new ObjectId(responseData.inviteId)
     }, {
       $set: {
         status: responseData.response,
-        updated_at: new Date()
+        updated_at: new_updated_at
+      }
+    })
+
+    mongoDb.setCollection('notifications');
+    await mongoDb.upsertOne({
+      'data.user_id': userData.id,
+      'data.inviteData._id': new ObjectId(responseData.inviteId),
+    }, {
+      $set: {
+        'data.inviteData.status': responseData.response,
+        'data.inviteData.updated_at': new_updated_at
       }
     })
 
@@ -629,7 +642,7 @@ module.exports.bulkAddMembersToPocket = async (userData, pocketId, memberDataArr
         })
 
         const notifData = {
-          date: new Date.now(),
+          date: new Date(),
           type: 'member_approval_needed',
           message: `${userData.name} has been invite you to pocket ${pocket.name}, you could accept or reject it`,
           requestedBy: {
@@ -731,13 +744,14 @@ module.exports.deletePocketMember = async (pocketId, userId, memberList) => {
         pocket_id: pocketId,
         user_id: userId,
       },
+      transaction: t 
     });
 
     if (!isMember || (isMember.role !== "owner" && isMember.role !== "admin")) {
       throw new ForbiddenError("You do not have access to this pocket");
     }
 
-    const pocket = await Pocket.findByPk(pocketId);
+    const pocket = await Pocket.findByPk(pocketId, { transaction: t  });
     if (!pocket) {
       throw new NotFoundError("Pocket not found");
     }
@@ -751,9 +765,11 @@ module.exports.deletePocketMember = async (pocketId, userId, memberList) => {
             user_id: memberId,
             pocket_id: pocketId,
           },
+          transaction: t 
         }),
         MockSavingsAccount.findOne({
           where: { user_id: memberId },
+          transaction: t 
         }),
       ]);
 
@@ -829,18 +845,21 @@ module.exports.leavePocket = async (pocketId, userId) => {
         pocket_id: pocketId,
         user_id: userId,
       },
+      transaction: t 
     })
 
     const [mock, pocket] = await Promise.all([
       MockSavingsAccount.findOne({
         where: {
           user_id: userId
-        }
+        },
+        transaction: t 
       }),
       Pocket.findOne({
         where: {
           pocket_id: pocketId
-        }
+        },
+        transaction: t 
       })
     ])
 
@@ -885,10 +904,12 @@ module.exports.leavePocket = async (pocketId, userId) => {
       transaction: t
     })
 
+    await t.commit();
     return {
       message: "You have left the pocket successfully"
     };
   } catch (error) {
+    await t.rollback();
     logger.error(error);
     throw new InternalServerError(error.message);
   }
@@ -937,7 +958,7 @@ module.exports.updateRolePocketMember = async (
     }
 
     // Admin tidak boleh mengubah admin lain atau sesama admin
-    if (isRequesterAdmin && targetMember.role !== "member") {
+    if (isRequesterAdmin && targetMember.role == "admin") {
       throw new ForbiddenError("Admin can only change role of regular members");
     }
 
