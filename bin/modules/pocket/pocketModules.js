@@ -958,7 +958,7 @@ module.exports.updateRolePocketMember = async (
     }
 
     // Admin tidak boleh mengubah admin lain atau sesama admin
-    if (isRequesterAdmin && targetMember.role == "admin") {
+    if (isRequesterAdmin && (targetMember.role == "admin" || targetMember.role == 'owner')) {
       throw new ForbiddenError("Admin can only change role of regular members");
     }
 
