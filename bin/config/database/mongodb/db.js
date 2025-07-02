@@ -182,6 +182,27 @@ class DB {
     }
   }
 
+  async findManyByFieldInArray(field, values) {
+    const dbName = await this.getDatabase();
+    await this.client.connect();
+
+    try {
+      const connection = this.client.db(dbName);
+      const db = connection.collection(this.collectionName);
+
+      const query = {};
+      query[field] = { $in: values };
+
+      const recordset = await db.find(query).toArray();
+
+      return wrapper.data(recordset);
+
+    } catch (err) {
+      console.log(err.message, 'Error find data in mongodb using $in');
+      return wrapper.error(`Error Mongo $in ${err.message}`);
+    }
+  }
+
   async countData(param) {
     const ctx = 'mongodb-countData';
     const dbName = await this.getDatabase();

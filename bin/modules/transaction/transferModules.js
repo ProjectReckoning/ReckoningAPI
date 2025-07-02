@@ -604,7 +604,7 @@ module.exports.processRecurringAutoTransfer = async (budget) => {
     });
 
     if (new Date(dateSchedule.data.end_date) <= new Date()) {
-      budget.status = 'completed';
+      budget.status = 'inactive';
       budget.is_active = false;
     }
 
@@ -617,6 +617,45 @@ module.exports.processRecurringAutoTransfer = async (budget) => {
     logger.error('Recurring budget error:', err);
   }
 };
+
+const getTrfSchedForAdmin = async (pocket_id) => {
+  const scheduleTransfer = await AutoBudgeting.findAll({
+    where: {
+      pocket_id: pocket_id,
+      is_active: true
+    },
+    attributes: [
+      'id',
+      'recurring_amount',
+      'next_run_date',
+      'status'
+    ],
+    order: [['next_run_date', 'ASC']],
+    raw: true
+  });
+
+  return scheduleTransfer;
+}
+
+const getTrfSchedForMember = async (userData, pocket_id) => {
+  const scheduleTransfer = await AutoBudgeting.findAll({
+    where: {
+      user_id: userData.id,
+      pocket_id: pocket_id,
+      is_active: true
+    },
+    attributes: [
+      'id',
+      'recurring_amount',
+      'next_run_date',
+      'status'
+    ],
+    order: [['next_run_date', 'ASC']],
+    raw: true
+  });
+
+  return scheduleTransfer;
+}
 
 module.exports.getTransferSchedule = async (userData, pocket_id) => {
   try {
@@ -631,41 +670,36 @@ module.exports.getTransferSchedule = async (userData, pocket_id) => {
       PocketMember.findOne({
         where: {
           user_id: userData.id,
-          pocket_id: pocket_id,
-          [Op.or]: [
-            { role: 'admin' },
-            { role: 'owner' }
-          ]
+          pocket_id: pocket_id
         }
       })
     ]);
 
     if (!user || !pocket || !member) {
-      throw new NotFoundError('User/Pocket not found or user is not an admin/owner of this pocket');
+      throw new NotFoundError('User/Pocket not found');
     }
 
-    const scheduleTransfer = await AutoBudgeting.findAll({
-      where: {
-        pocket_id: pocket_id,
-        is_active: true
-      },
-      attributes: [
-        'id',
-        'recurring_amount',
-        'next_run_date',
-        'status'
-      ],
-      order: [['next_run_date', 'ASC']],
-      raw: true
-    });
+    let scheduleTransfer;
+    if (member.role !== 'admin' && member.role !== 'owner') {
+      scheduleTransfer = await getTrfSchedForMember(user, pocket_id);
+    } else {
+      scheduleTransfer = await getTrfSchedForAdmin(pocket_id);
+    }
 
     mongoDb.setCollection('scheduledTransferDate');
-    const result = await Promise.all(scheduleTransfer.map(async (sched) => {
-      const mongo = await mongoDb.findOne({ auto_budget_id: sched.id });
-      return {
-        ...sched,
-        detail: mongo?.data || null
-      };
+    const ids = scheduleTransfer.map(s => s.id);
+    const mongoResult = await mongoDb.findManyByFieldInArray('auto_budget_id', ids);
+
+    logger.info(mongoResult);
+
+    const mongoMap = new Map();
+    mongoResult.data.forEach(doc => {
+      mongoMap.set(doc.auto_budget_id, doc.data || null);
+    });
+
+    const result = scheduleTransfer.map(sched => ({
+      ...sched,
+      detail: mongoMap.get(sched.id) || null
     }));
 
     return result;
@@ -743,6 +777,7 @@ module.exports.getDetailTransferSchedule = async (userData, pocket_id, schedule_
 }
 
 module.exports.deleteTransferSchedule = async (userData, pocket_id, schedule_id) => {
+  const t = await sequelize.transaction();
   try {
     const existAutoBudget = await AutoBudgeting.findOne({
       where: {
@@ -758,10 +793,13 @@ module.exports.deleteTransferSchedule = async (userData, pocket_id, schedule_id)
       ]
     });
 
-    await existAutoBudget.destroy();
+    existAutoBudget.statu = 'inactive';
+    await existAutoBudget.save({ transaction: t });
 
+    await t.commit();
     return existAutoBudget;
   } catch (error) {
+    await t.rollback();
     logger.error(error);
     if (
       error instanceof BadRequestError ||

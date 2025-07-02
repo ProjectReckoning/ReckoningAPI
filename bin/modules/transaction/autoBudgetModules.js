@@ -42,7 +42,7 @@ const processRecurringAutoBudget = async (budget) => {
     if (budget.schedule_type !== 'once') {
       budget.next_run_date = calculateNextRunDate(budget.schedule_type, budget.schedule_value);
     } else {
-      budget.status = 'completed';
+      budget.status = 'inactive';
       budget.is_active = false;
     }
     await budget.save({ transaction: t });
