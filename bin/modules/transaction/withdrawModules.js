@@ -9,23 +9,27 @@ module.exports.initWithdraw = async (userId, withdrawData) => {
       User.findOne({
         where: {
           id: userId
-        }
+        },
+        transaction: t 
       }),
       Pocket.findOne({
         where: {
           id: withdrawData.pocket_id
-        }
+        },
+        transaction: t 
       }),
       PocketMember.findOne({
         where: {
           pocket_id: withdrawData.pocket_id,
           user_id: userId
-        }
+        },
+        transaction: t 
       }),
       MockSavingsAccount.findOne({
         where: {
           user_id: userId
-        }
+        },
+        transaction: t 
       })
     ])
 

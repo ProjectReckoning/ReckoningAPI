@@ -6,6 +6,8 @@ const MongoDb = require('../../config/database/mongodb/db');
 const mongoDb = new MongoDb(config.get('/mongoDbUrl'));
 const { calculateNextRunDate, calculateNextRunDateFromSchedule, toUTCFromWIB } = require("../../helpers/utils/dateFormatter");
 const { Op } = require("sequelize");
+const notificationModules = require('../users/notificationModules');
+const { ObjectId } = require("mongodb");
 
 const calculateSmartSplit = ({
   initiatorUserId,
@@ -92,23 +94,27 @@ module.exports.initTransfer = async (userData, transferData) => {
       User.findOne({
         where: {
           id: userData.id
-        }
+        },
+        transaction: t 
       }),
       Pocket.findOne({
         where: {
           id: transferData.pocket_id
-        }
+        },
+        transaction: t 
       }),
       PocketMember.findOne({
         where: {
           pocket_id: transferData.pocket_id,
           user_id: userData.id
-        }
+        },
+        transaction: t 
       }),
       MockSavingsAccount.findOne({
         where: {
           user_id: userData.id
-        }
+        },
+        transaction: t 
       })
     ])
 
@@ -132,7 +138,8 @@ module.exports.initTransfer = async (userData, transferData) => {
       // CASE 2: Initiator needs help — SmartSplit + apply to multiple members
       const members = await PocketMember.findAll({
         where: { pocket_id: transferData.pocket_id },
-        attributes: ['user_id', 'contribution_amount']
+        attributes: ['user_id', 'contribution_amount'],
+        transaction: t 
       });
 
       const splitResult = calculateSmartSplit({
@@ -155,7 +162,7 @@ module.exports.initTransfer = async (userData, transferData) => {
         type: 'Expense',
         amount: transferData.balance,
         destination_acc: 'BNI - [NO REKENING]',
-        category: 'transfer',
+        category: transferData.category || 'transfer',
         status: 'pending',
         description: transferData.description || '',
         is_business_expense: false
@@ -175,6 +182,8 @@ module.exports.initTransfer = async (userData, transferData) => {
 
       // Send approval notification
       for (const { user_id, amount } of splitResult) {
+        if (user_id === userData.id) continue;
+
         const approvalData = {
           status: 'pending',
           transaction_id: result.id,
@@ -184,7 +193,7 @@ module.exports.initTransfer = async (userData, transferData) => {
         await TransactionApproval.create(approvalData, { transaction: t });
 
         const notifData = {
-          date: new Date.now(),
+          date: new Date(),
           type: 'transaction_approval_needed',
           message: `${userData.name} needs your approval for his transaction. ${amount} will be withdrawn from your balance, you could accept or reject it`,
           requestedBy: {
@@ -195,7 +204,9 @@ module.exports.initTransfer = async (userData, transferData) => {
           amount,
           pocket: pocket.get({ plain: true }),
           user_id: user_id,
-          transaction_detail: result
+          transaction_detail: result,
+          responded: false,
+          response: null,
         }
 
         const pushToken = await notificationModules.getPushToken(user_id);
@@ -286,6 +297,9 @@ module.exports.executeDirectTransfer = async (userData, transferData, t, is_busi
 
 module.exports.executeSplitTransfer = async (trxId, transferData, splitResult, t) => {
   // Apply reductions to each contributing user
+  logger.info('getting to split transfer');
+  logger.info(transferData);
+  logger.info(splitResult);
   for (const { user_id, amount } of splitResult) {
     await Promise.all([
       PocketMember.increment(
@@ -331,7 +345,7 @@ module.exports.executeSplitTransfer = async (trxId, transferData, splitResult, t
 module.exports.respondTransfer = async (userData, approvalData) => {
   const t = await sequelize.transaction();
   try {
-    const transactionData = await Transaction.findByPk(approvalData.transactionId);
+    const transactionData = await Transaction.findByPk(approvalData.transactionId, { transaction: t  });
 
     if (!transactionData) {
       throw new NotFoundError('Transaction not found');
@@ -342,7 +356,8 @@ module.exports.respondTransfer = async (userData, approvalData) => {
         transaction_id: approvalData.transactionId,
         approver_user_id: userData.id,
         status: 'pending',
-      }
+      },
+      transaction: t 
     });
 
     if (!transactionApprovalDataUser) {
@@ -350,7 +365,9 @@ module.exports.respondTransfer = async (userData, approvalData) => {
     }
 
     mongoDb.setCollection('pocketSplitResult');
-    const pocketSplit = await mongoDb.findOne({ transaction_id: approvalData.transactionId });
+    const pocketSplit = await mongoDb.findOne({ transaction_id: Number(approvalData.transactionId) });
+    logger.info(pocketSplit);
+    logger.info(approvalData.transactionId);
 
     if (!pocketSplit?.data?.splitResult) {
       throw new NotFoundError('Split result not found for this transaction');
@@ -363,8 +380,9 @@ module.exports.respondTransfer = async (userData, approvalData) => {
       throw new ConflictError('You are not authorized to approve this transaction');
     }
 
+    const approved = approvalData.status === 'accepted' ? 'approved' : 'rejected';
     const result = await transactionApprovalDataUser.update(
-      { status: approvalData.status },
+      { status: approved },
       { transaction: t }
     );
 
@@ -372,8 +390,20 @@ module.exports.respondTransfer = async (userData, approvalData) => {
       where: {
         transaction_id: approvalData.transactionId,
         status: 'pending',
-      }
+      },
+      transaction: t
     });
+
+    mongoDb.setCollection('notifications')
+    await mongoDb.upsertOne({
+      'data.user_id': Number(userData.id),
+      'data.transaction_id': Number(approvalData.transactionId),
+    }, {
+      $set: {
+        'data.responded': true,
+        'data.response': approvalData.status
+      }
+    })
 
     let message = `User has responded with ${approvalData.status}`;
     if (approvalData.status === 'rejected') {
@@ -385,7 +415,7 @@ module.exports.respondTransfer = async (userData, approvalData) => {
 
       try {
         const notifData = {
-          date: new Date.now(),
+          date: new Date(),
           type: 'information',
           message: `${userData.name} rejected your request. Transaction has been cancelled.`,
           user_id: transactionData.initiator_user_id
@@ -413,6 +443,7 @@ module.exports.respondTransfer = async (userData, approvalData) => {
         balance: transactionData.amount,
         pocket_id: transactionData.pocket_id,
       }
+      logger.info('all user already accepted');
 
       if (transactionData.status !== 'pending') {
         throw new ConflictError('This transaction has already been processed.');
@@ -420,9 +451,27 @@ module.exports.respondTransfer = async (userData, approvalData) => {
 
       await this.executeSplitTransfer(approvalData.transactionId, transferData, pocketSplit.data.splitResult, t);
       message = `User has responded with ${approvalData.status}, and transfer has been done.`;
+
+      mongoDb.setCollection('notifications')
+      const notifList = await mongoDb.findMany({
+        'data.transaction_detail.id': Number(approvalData.transactionId)
+      })
+
+      logger.info(notifList);
+
+      for (const notif of notifList.data) {
+        mongoDb.upsertOne({
+          _id: new ObjectId(notif._id)
+        }, {
+          $set: {
+            'data.transaction_detail.status': 'completed'
+          }
+        })
+      }
+
       try {
         const notifData = {
-          date: new Date.now(),
+          date: new Date(),
           type: 'information',
           message: `${userData.name} accepted your request. Transaction has been done.`,
           user_id: transactionData.initiator_user_id
@@ -466,20 +515,23 @@ module.exports.setTransferSchedule = async (userData, scheduleData) => {
       User.findOne({
         where: {
           id: userData.id
-        }
+        },
+        transaction: t 
       }),
       Pocket.findOne({
         where: {
           id: scheduleData.pocket_id,
           type: 'business'
-        }
+        },
+        transaction: t 
       }),
       PocketMember.findOne({
         where: {
           pocket_id: scheduleData.pocket_id,
           user_id: userData.id
-        }
-      })
+        },
+        transaction: t 
+      }),
     ])
 
     if (!user || !pocket || !member) {
@@ -553,7 +605,7 @@ module.exports.setTransferSchedule = async (userData, scheduleData) => {
 module.exports.processRecurringAutoTransfer = async (budget) => {
   const t = await sequelize.transaction();
   try {
-    const account = await MockSavingsAccount.findOne({ where: { user_id: budget.user_id } });
+    const account = await MockSavingsAccount.findOne({ where: { user_id: budget.user_id }, transaction: t  });
     if (!account || account.balance < budget.recurring_amount) {
       // I want it to change the next_run_date to tomorrow the autobudget in db
       return;
@@ -579,6 +631,7 @@ module.exports.processRecurringAutoTransfer = async (budget) => {
         ],
       },
       attributes: ['user_id', 'contribution_amount'],
+      transaction: t 
     })
 
     const splitResult = calculateSmartSplit({
@@ -598,9 +651,9 @@ module.exports.processRecurringAutoTransfer = async (budget) => {
 
     mongoDb.setCollection('scheduledTransferDate');
     const dateSchedule = await mongoDb.findOne({
-      auto_budget_id: budget.id,
-      user_id: budget.user_id,
-      pocket_id: budget.pocket_id,
+      auto_budget_id: Number(budget.id),
+      user_id: Number(budget.user_id),
+      pocket_id: Number(budget.pocket_id),
     });
 
     if (new Date(dateSchedule.data.end_date) <= new Date()) {
@@ -757,7 +810,7 @@ module.exports.getDetailTransferSchedule = async (userData, pocket_id, schedule_
     }
 
     mongoDb.setCollection('scheduledTransferDate');
-    const mongo = await mongoDb.findOne({ auto_budget_id: scheduleTransfer.id });
+    const mongo = await mongoDb.findOne({ auto_budget_id: Number(scheduleTransfer.id) });
 
     return {
       ...scheduleTransfer,
@@ -790,7 +843,8 @@ module.exports.deleteTransferSchedule = async (userData, pocket_id, schedule_id)
       order: [
         ['updatedAt', 'DESC'],
         ['createdAt', 'DESC']
-      ]
+      ],
+      transaction: t 
     });
 
     existAutoBudget.statu = 'inactive';

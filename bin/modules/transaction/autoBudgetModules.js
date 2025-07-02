@@ -117,7 +117,8 @@ module.exports.setAutoBudget = async (autoBudgetData) => {
         pocket_id: autoBudgetData.pocket_id,
         status: 'active',
         is_active: true
-      }
+      },
+      transaction: t 
     });
 
     // If it exist, delete first

@@ -439,7 +439,7 @@ paths:
             schema:
               type: object
               required:
-                - pocket_id
+                - pocketId
                 - members
               properties:
                 pocket_id:
@@ -1569,6 +1569,7 @@ paths:
         "404":
           description: Pocket not found
 
+  /pocket/{pocketId}/members/kick:
     delete:
         summary: Delete members from a pocket
         tags:
@@ -3062,6 +3063,7 @@ paths:
                 - balance
                 - pocket_id
                 - destination
+                - category
               properties:
                 balance:
                   type: number

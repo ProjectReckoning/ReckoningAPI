@@ -106,6 +106,7 @@ module.exports.initTransfer = async (req, res) => {
     pocket_id: req.body.pocket_id,
     destination: req.body.destination,
     description: req.body.description,
+    category: req.body.category
   }
 
   transferModules.initTransfer(userData, transferData)
