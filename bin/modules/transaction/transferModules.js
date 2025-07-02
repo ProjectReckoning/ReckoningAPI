@@ -87,6 +87,66 @@ const calculateSmartSplit = ({
   return Array.from(resultMap, ([user_id, amount]) => ({ user_id, amount }));
 }
 
+const createPendingApproval = async ({ userData, transferData, approvers, pocket, t }) => {
+  const transactionData = {
+    pocket_id: transferData.pocket_id,
+    initiator_user_id: userData.id,
+    type: 'Expense',
+    amount: transferData.balance,
+    destination_acc: 'BNI - [NO REKENING]',
+    category: transferData.category || 'transfer',
+    status: 'pending',
+    description: transferData.description || '',
+    is_business_expense: true
+  };
+
+  const transaction = await Transaction.create(transactionData, { transaction: t });
+
+  mongoDb.setCollection('pocketSplitResult');
+  await mongoDb.insertOne({ transaction_id: transaction.id, splitResult: approvers });
+
+  for (const { user_id, amount } of approvers) {
+    if (user_id === userData.id) continue;
+
+    await TransactionApproval.create({
+      transaction_id: transaction.id,
+      approver_user_id: user_id,
+      status: 'pending'
+    }, { transaction: t });
+
+    const notifData = {
+      date: new Date(),
+      type: 'transaction_approval_needed',
+      message: `${userData.name} needs your approval for a transaction. ${amount} will be withdrawn from your balance.`,
+      requestedBy: {
+        id: userData.id,
+        name: userData.name
+      },
+      transaction_id: transaction.id,
+      amount,
+      pocket: pocket.get({ plain: true }),
+      user_id,
+      transaction_detail: transaction.get({ plain: true }),
+      responded: false,
+      response: null
+    };
+
+    const pushToken = await notificationModules.getPushToken(user_id);
+    const notifMessage = notificationModules.setNotificationData({
+      pushToken,
+      title: `Needs approval for ${userData.name} transaction`,
+      body: notifData.message,
+      data: notifData
+    });
+
+    await notificationModules.pushNotification(notifMessage);
+    mongoDb.setCollection('notifications');
+    await mongoDb.insertOne(notifMessage[0]);
+  }
+
+  return transaction.get({ plain: true });
+}
+
 module.exports.initTransfer = async (userData, transferData) => {
   const t = await sequelize.transaction();
   try {
@@ -95,26 +155,26 @@ module.exports.initTransfer = async (userData, transferData) => {
         where: {
           id: userData.id
         },
-        transaction: t 
+        transaction: t
       }),
       Pocket.findOne({
         where: {
           id: transferData.pocket_id
         },
-        transaction: t 
+        transaction: t
       }),
       PocketMember.findOne({
         where: {
           pocket_id: transferData.pocket_id,
           user_id: userData.id
         },
-        transaction: t 
+        transaction: t
       }),
       MockSavingsAccount.findOne({
         where: {
           user_id: userData.id
         },
-        transaction: t 
+        transaction: t
       })
     ])
 
@@ -125,6 +185,94 @@ module.exports.initTransfer = async (userData, transferData) => {
     // Check if the current_balance of the pocket is enough to make the transaction
     if (pocket.current_balance < transferData.balance) {
       throw new ConflictError("Pocket's current balance is not enough to make the transaction");
+    }
+
+    const isBusiness = pocket.type === 'business';
+    const isInitiatorAdmin = ['admin', 'owner'].includes(member.role);
+
+    if (isBusiness && isInitiatorAdmin) {
+      const adminMembers = await PocketMember.findAll({
+        where: {
+          pocket_id: transferData.pocket_id,
+          role: ['admin', 'owner']
+        },
+        attributes: ['user_id', 'contribution_amount'],
+        transaction: t
+      });
+
+      if (adminMembers.length === 1) {
+        // Only initiator is admin/owner → direct transfer
+        result = await this.executeDirectTransfer(userData, transferData, t, true);
+      } else {
+        // Multiple admins/owners → always split (even if initiator can cover it)
+        const splitResult = calculateSmartSplit({
+          initiatorUserId: userData.id,
+          totalBalance: pocket.current_balance,
+          transferAmount: transferData.balance,
+          members: adminMembers
+        });
+
+        const totalSplit = splitResult.reduce((a, b) => a + b.amount, 0);
+        if (totalSplit < transferData.balance) {
+          throw new ConflictError("Unable to distribute full transfer amount across admins/owners");
+        }
+
+        return await createPendingApproval({
+          userData,
+          transferData,
+          approvers: splitResult,
+          pocket,
+          t
+        });
+      }
+    }
+
+    // If the pocket is business and the initiator is not admin/owner → route to admin approval
+    if (isBusiness && !isInitiatorAdmin) {
+      const approverMembers = await PocketMember.findAll({
+        where: {
+          pocket_id: transferData.pocket_id,
+          role: ['admin', 'owner']
+        },
+        attributes: ['user_id', 'contribution_amount']
+      });
+
+      if (approverMembers.length === 0) {
+        throw new ConflictError("No admin or owner found for business pocket");
+      }
+
+      // If only one admin/owner, send approval to them only
+      if (approverMembers.length === 1) {
+        const approver = approverMembers[0];
+        return await createPendingApproval({
+          userData,
+          transferData,
+          approvers: [approver],
+          pocket,
+          t
+        });
+      }
+
+      // Multiple admins/owners — split using calculateSmartSplit
+      const splitResult = calculateSmartSplit({
+        initiatorUserId: userData.id, // not included in split
+        totalBalance: pocket.current_balance,
+        transferAmount: transferData.balance,
+        members: approverMembers
+      });
+
+      const totalSplit = splitResult.reduce((a, b) => a + b.amount, 0);
+      if (totalSplit < transferData.balance) {
+        throw new ConflictError("Unable to distribute full transfer amount across admins/owners");
+      }
+
+      return await createPendingApproval({
+        userData,
+        transferData,
+        approvers: splitResult,
+        pocket,
+        t
+      });
     }
 
     // Check if user's contribution amount in pocket is enough to make the transaction
@@ -139,7 +287,7 @@ module.exports.initTransfer = async (userData, transferData) => {
       const members = await PocketMember.findAll({
         where: { pocket_id: transferData.pocket_id },
         attributes: ['user_id', 'contribution_amount'],
-        transaction: t 
+        transaction: t
       });
 
       const splitResult = calculateSmartSplit({
@@ -162,7 +310,7 @@ module.exports.initTransfer = async (userData, transferData) => {
         type: 'Expense',
         amount: transferData.balance,
         destination_acc: 'BNI - [NO REKENING]',
-        category: transferData.category || 'transfer',
+        category: transferData.category ?? 'transfer',
         status: 'pending',
         description: transferData.description || '',
         is_business_expense: false
@@ -284,7 +432,7 @@ module.exports.executeDirectTransfer = async (userData, transferData, t, is_busi
       type: 'Expense',
       amount: transferData.balance,
       destination_acc: 'BNI - [NO REKENING]',
-      category: 'transfer',
+      category: transferData.category || 'transfer',
       status: 'completed',
       description: transferData.description || '',
       is_business_expense: is_business
@@ -345,7 +493,7 @@ module.exports.executeSplitTransfer = async (trxId, transferData, splitResult, t
 module.exports.respondTransfer = async (userData, approvalData) => {
   const t = await sequelize.transaction();
   try {
-    const transactionData = await Transaction.findByPk(approvalData.transactionId, { transaction: t  });
+    const transactionData = await Transaction.findByPk(approvalData.transactionId, { transaction: t });
 
     if (!transactionData) {
       throw new NotFoundError('Transaction not found');
@@ -357,7 +505,7 @@ module.exports.respondTransfer = async (userData, approvalData) => {
         approver_user_id: userData.id,
         status: 'pending',
       },
-      transaction: t 
+      transaction: t
     });
 
     if (!transactionApprovalDataUser) {
@@ -516,21 +664,21 @@ module.exports.setTransferSchedule = async (userData, scheduleData) => {
         where: {
           id: userData.id
         },
-        transaction: t 
+        transaction: t
       }),
       Pocket.findOne({
         where: {
           id: scheduleData.pocket_id,
           type: 'business'
         },
-        transaction: t 
+        transaction: t
       }),
       PocketMember.findOne({
         where: {
           pocket_id: scheduleData.pocket_id,
           user_id: userData.id
         },
-        transaction: t 
+        transaction: t
       }),
     ])
 
@@ -605,7 +753,7 @@ module.exports.setTransferSchedule = async (userData, scheduleData) => {
 module.exports.processRecurringAutoTransfer = async (budget) => {
   const t = await sequelize.transaction();
   try {
-    const account = await MockSavingsAccount.findOne({ where: { user_id: budget.user_id }, transaction: t  });
+    const account = await MockSavingsAccount.findOne({ where: { user_id: budget.user_id }, transaction: t });
     if (!account || account.balance < budget.recurring_amount) {
       // I want it to change the next_run_date to tomorrow the autobudget in db
       return;
@@ -631,7 +779,7 @@ module.exports.processRecurringAutoTransfer = async (budget) => {
         ],
       },
       attributes: ['user_id', 'contribution_amount'],
-      transaction: t 
+      transaction: t
     })
 
     const splitResult = calculateSmartSplit({
@@ -844,7 +992,7 @@ module.exports.deleteTransferSchedule = async (userData, pocket_id, schedule_id)
         ['updatedAt', 'DESC'],
         ['createdAt', 'DESC']
       ],
-      transaction: t 
+      transaction: t
     });
 
     existAutoBudget.statu = 'inactive';
