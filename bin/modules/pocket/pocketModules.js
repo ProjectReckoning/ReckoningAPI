@@ -512,6 +512,10 @@ module.exports.updatePocket = async (pocketId, userId, updateData) => {
       where: { id: pocketId, owner_user_id: userId },
     });
 
+    if (!pocket) {
+      throw new NotFoundError('User are not owner of this pocket');
+    }
+
     const member = await PocketMember.findOne({
       where: { pocket_id: pocketId, user_id: userId }
     })
