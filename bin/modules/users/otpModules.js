@@ -47,18 +47,27 @@ module.exports.requestOtp = async (reqOtpData) => {
       throw new ConflictError('No push token registered')
     }
 
+    const notifData = {
+      date: new Date(),
+      type: 'information',
+      user_id: Number(user.id),
+    }
     // Send notification
     const messages = [{
       to: pushEntry.data.expoPushToken,
       sound: 'default',
       title: 'Your OTP Code to login in website',
       body: `Your OTP is ${otp}`,
+      data: notifData
     }];
 
     const chunks = expo.chunkPushNotifications(messages);
     for (let chunk of chunks) {
       await expo.sendPushNotificationsAsync(chunk);
     }
+
+    mongoDb.setCollection('notifications');
+    await mongoDb.insertOne(messages[0]);
 
     return { 
       phone_number: reqOtpData.phone_number, 
