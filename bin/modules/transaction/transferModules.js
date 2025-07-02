@@ -995,7 +995,7 @@ module.exports.deleteTransferSchedule = async (userData, pocket_id, schedule_id)
       transaction: t
     });
 
-    existAutoBudget.statu = 'inactive';
+    existAutoBudget.status = 'inactive';
     await existAutoBudget.save({ transaction: t });
 
     await t.commit();
