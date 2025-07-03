@@ -854,7 +854,7 @@ module.exports.leavePocket = async (pocketId, userId) => {
 
     const member = await PocketMember.findOne({
       where: {
-        id: pocketId,
+        pocket_id: pocketId,
         user_id: userId,
       },
       transaction: t
