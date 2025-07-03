@@ -991,7 +991,7 @@ module.exports.updateRolePocketMember = async (
 
     // Owner bisa mengubah admin maupun member
     let parseNewRole = newRole;
-    if (newRole === 'member' && pocketType === 'business') {
+    if (newRole === 'member' && pocketType.type === 'business') {
       parseNewRole = 'spender';
     }
     targetMember.role = parseNewRole;
