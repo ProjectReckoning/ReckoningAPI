@@ -829,7 +829,8 @@ const getTrfSchedForAdmin = async (pocket_id) => {
       'id',
       'recurring_amount',
       'next_run_date',
-      'status'
+      'status',
+      'category'
     ],
     order: [['next_run_date', 'ASC']],
     raw: true
@@ -848,7 +849,8 @@ const getTrfSchedForMember = async (userData, pocket_id) => {
       'id',
       'recurring_amount',
       'next_run_date',
-      'status'
+      'status',
+      'category'
     ],
     order: [['next_run_date', 'ASC']],
     raw: true
