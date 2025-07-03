@@ -197,7 +197,7 @@ module.exports.getDetailTransferSchedule = async (req, res) => {
 module.exports.deleteTransferSchedule = async (req, res) => {
   const userData = req.userData;
   const pocket_id = req.params.pocketId;
-  const schedule_id = req.params.schedule_id;
+  const schedule_id = req.params.scheduleId;
 
   transferModules.deleteTransferSchedule(userData, pocket_id, schedule_id)
     .then(resp => {
