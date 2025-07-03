@@ -4,6 +4,8 @@ const { calculateNextRunDate } = require("../../helpers/utils/dateFormatter");
 const logger = require("../../helpers/utils/logger");
 const { AutoBudgeting, sequelize, Pocket, PocketMember, MockSavingsAccount, Transaction } = require('../../models');
 const { processRecurringAutoTransfer } = require("./transferModules");
+const { notifyPocketMembers } = require("../users/notificationModules");
+const { formatCurrency } = require("../../helpers/utils/amountFormatter");
 
 const processRecurringAutoBudget = async (budget) => {
   const t = await sequelize.transaction();
@@ -46,6 +48,19 @@ const processRecurringAutoBudget = async (budget) => {
       budget.is_active = false;
     }
     await budget.save({ transaction: t });
+
+    try {
+      await notifyPocketMembers({
+        pocketId: budget.pocket_id,
+        targetUserId: budget.user_id,
+        title: `${formatCurrency(topupData.balance || 0)} telah masuk ke ${pocket.name} melalui auto budget anda`,
+        body: `Anda telah berhasil melakukan top up sebesar ${formatCurrency(topupData.balance || 0)} ke pocket ${pocket.name} melalui auto budget anda`,
+        message: `Top up berhasil ditambahkan ke pocket ini.`,
+        transaction: t
+      })
+    } catch (error) {
+      logger.warn('Failed to send notification');
+    }
 
     await t.commit();
   } catch (err) {

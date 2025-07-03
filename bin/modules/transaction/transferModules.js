@@ -8,6 +8,7 @@ const { calculateNextRunDate, calculateNextRunDateFromSchedule, toUTCFromWIB } =
 const { Op } = require("sequelize");
 const notificationModules = require('../users/notificationModules');
 const { ObjectId } = require("mongodb");
+const { formatCurrency } = require("../../helpers/utils/amountFormatter");
 
 const calculateSmartSplit = ({
   initiatorUserId,
@@ -117,7 +118,7 @@ const createPendingApproval = async ({ userData, transferData, approvers, pocket
     const notifData = {
       date: new Date(),
       type: 'transaction_approval_needed',
-      message: `${userData.name} memerlukan persetujuanmu untuk transaksinya. Transaksi sebesar ${amount} akan ditarik dari saldomu`,
+      message: `${userData.name} memerlukan persetujuanmu untuk transaksinya. Transaksi sebesar ${formatCurrency(amount || 0)} akan ditarik dari saldomu`,
       requestedBy: {
         id: userData.id,
         name: userData.name
@@ -344,7 +345,7 @@ module.exports.initTransfer = async (userData, transferData) => {
         const notifData = {
           date: new Date(),
           type: 'transaction_approval_needed',
-          message: `${userData.name} memerlukan persetujuanmu untuk transaksinya. Transaksi sebesar Rp ${amount} akan ditarik dari saldomu, kamu bisa menerima atau menolaknya`,
+          message: `${userData.name} memerlukan persetujuanmu untuk transaksinya. Transaksi sebesar Rp ${formatCurrency(amount || 0)} akan ditarik dari saldomu, kamu bisa menerima atau menolaknya`,
           requestedBy: {
             id: userData.id,
             name: userData.name,
@@ -362,7 +363,7 @@ module.exports.initTransfer = async (userData, transferData) => {
         const notifMessage = notificationModules.setNotificationData({
           pushToken,
           title: `Butuh persetujuan untuk transaksi ${userData.name}`,
-          body: `${userData.name} memerlukan persetujuanmu untuk transaksinya. Transaksi sebesar Rp ${amount} akan ditarik dari saldomu, kamu bisa menerima atau menolaknya`,
+          body: `${userData.name} memerlukan persetujuanmu untuk transaksinya. Transaksi sebesar Rp ${formatCurrency(amount || 0)} akan ditarik dari saldomu, kamu bisa menerima atau menolaknya`,
           data: notifData
         })
 
@@ -812,6 +813,18 @@ module.exports.processRecurringAutoTransfer = async (budget) => {
 
     budget.next_run_date = calculateNextRunDate(budget.schedule_type, budget.schedule_value);
     await budget.save({ transaction: t });
+    try {
+      await notificationModules.notifyPocketMembers({
+        pocketId: budget.pocket_id,
+        targetUserId: budget.user_id,
+        title: `${formatCurrency(topupData.balance || 0)} telah di transfer dari ${pocket.name} melalui schedule transfer anda`,
+        body: `Anda telah berhasil melakukan transfer sebesar ${formatCurrency(topupData.balance || 0)} dari pocket ${pocket.name} melalui schedule transfer anda`,
+        message: `Transfer berhasil dilakukan dari pocket ini.`,
+        transaction: t
+      })
+    } catch (error) {
+      logger.warn('Failed to send notification');
+    }
 
     await t.commit();
   } catch (err) {

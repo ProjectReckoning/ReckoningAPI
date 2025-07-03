@@ -1,6 +1,8 @@
 const { InternalServerError, BadRequestError, NotFoundError, ConditionNotMetError } = require("../../helpers/error");
+const { formatCurrency } = require("../../helpers/utils/amountFormatter");
 const logger = require("../../helpers/utils/logger");
 const { sequelize, User, Pocket, PocketMember, Transaction, MockSavingsAccount, Sequelize } = require("../../models");
+const { notifyPocketMembers } = require("../users/notificationModules");
 
 module.exports.initTopUp = async (userId, topupData) => {
   const t = await sequelize.transaction();
@@ -11,26 +13,26 @@ module.exports.initTopUp = async (userId, topupData) => {
         where: {
           id: userId
         },
-        transaction: t 
+        transaction: t
       }),
       Pocket.findOne({
         where: {
           id: topupData.pocket_id
         },
-        transaction: t 
+        transaction: t
       }),
       PocketMember.findOne({
         where: {
           pocket_id: topupData.pocket_id,
           user_id: userId
         },
-        transaction: t 
+        transaction: t
       }),
       MockSavingsAccount.findOne({
         where: {
           user_id: userId
         },
-        transaction: t 
+        transaction: t
       })
     ])
 
@@ -45,7 +47,7 @@ module.exports.initTopUp = async (userId, topupData) => {
 
     // Add user's MockSavingsAccount earmarked balance
     await MockSavingsAccount.increment(
-      { 
+      {
         // earmarked_balance: Sequelize.literal(`earmarked_balance + ${topupData.balance}`) 
         earmarked_balance: topupData.balance
       },
@@ -104,6 +106,18 @@ module.exports.initTopUp = async (userId, topupData) => {
     await t.commit();
 
     // CREATE NOTIFICATION HERE LATER
+    try {
+      await notifyPocketMembers({
+        pocketId: topupData.pocket_id,
+        excludeUserId: userId,
+        title: `${formatCurrency(topupData.balance || 0)} telah masuk ke ${pocket.name}`,
+        body: `${user.name} telah melakukan top up sebesar ${formatCurrency(topupData.balance || 0)} ke pocket ${pocket.name}`,
+        message: `Top up berhasil ditambahkan ke pocket ini.`,
+        transaction: t
+      })
+    } catch (error) {
+      logger.warn('Failed to send notification');
+    }
 
     return result;
   } catch (error) {

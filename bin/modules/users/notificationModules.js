@@ -8,6 +8,8 @@ const { NotFoundError, InternalServerError, ConflictError } = require('../../hel
 const { Expo } = require('expo-server-sdk');
 const { ObjectId } = require('mongodb');
 const expo = new Expo();
+const { PocketMember } = require('../../models');
+const { Op } = require('sequelize');
 
 module.exports.registerPushToken = async (notifData) => {
   try {
@@ -143,3 +145,74 @@ module.exports.getDetailNotif = async (notifData) => {
     throw new InternalServerError(error.message);
   }
 }
+
+module.exports.sendInformationNotif = async ({ title, body, message, user_id }) => {
+  try {
+    // Send notification will be here
+    const notifData = {
+      date: new Date(),
+      type: 'information',
+      message,
+      user_id
+    }
+    const pushToken = await this.getPushToken(user_id);
+    const notifMessage = this.setNotificationData({
+      pushToken,
+      title,
+      body,
+      data: notifData
+    })
+
+    await this.pushNotification(notifMessage);
+
+    mongoDb.setCollection('notifications');
+    await mongoDb.insertOne(notifMessage[0]);
+
+    logger.info('Send notification success');
+    return;
+  } catch (error) {
+    logger.error('Notification failed to send', error);
+  }
+}
+
+module.exports.notifyPocketMembers = async ({
+  pocketId,
+  excludeUserId = null,
+  targetUserId = null,
+  title,
+  body,
+  message,
+  transaction = null,
+}) => {
+  try {
+    const whereClause = {
+      pocket_id: pocketId,
+    };
+
+    // If sending to one specific user only
+    if (targetUserId) {
+      whereClause.user_id = targetUserId;
+    } else if (excludeUserId) {
+      // If excluding a specific user
+      whereClause.user_id = { [Op.ne]: excludeUserId };
+    }
+
+    const membersToNotify = await PocketMember.findAll({
+      where: whereClause,
+      transaction,
+    });
+
+    await Promise.all(
+      membersToNotify.map((member) =>
+        this.sendInformationNotif({
+          title,
+          body,
+          message,
+          user_id: member.user_id,
+        })
+      )
+    );
+  } catch (err) {
+    console.warn('Failed to notify pocket members:', err.message);
+  }
+};

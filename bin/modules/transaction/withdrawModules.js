@@ -1,6 +1,8 @@
 const { InternalServerError, BadRequestError, NotFoundError, ConditionNotMetError, ConflictError } = require("../../helpers/error");
 const logger = require("../../helpers/utils/logger");
 const { sequelize, User, Pocket, PocketMember, Transaction, MockSavingsAccount, Sequelize } = require("../../models");
+const { notifyPocketMembers } = require("../users/notificationModules");
+const { formatCurrency } = require("../../helpers/utils/amountFormatter");
 
 module.exports.initWithdraw = async (userId, withdrawData) => {
   const t = await sequelize.transaction();
@@ -10,26 +12,26 @@ module.exports.initWithdraw = async (userId, withdrawData) => {
         where: {
           id: userId
         },
-        transaction: t 
+        transaction: t
       }),
       Pocket.findOne({
         where: {
           id: withdrawData.pocket_id
         },
-        transaction: t 
+        transaction: t
       }),
       PocketMember.findOne({
         where: {
           pocket_id: withdrawData.pocket_id,
           user_id: userId
         },
-        transaction: t 
+        transaction: t
       }),
       MockSavingsAccount.findOne({
         where: {
           user_id: userId
         },
-        transaction: t 
+        transaction: t
       })
     ])
 
@@ -74,7 +76,7 @@ module.exports.initWithdraw = async (userId, withdrawData) => {
 
     // Reduce the earmarked_balance in MockSavingsAccount
     await MockSavingsAccount.increment(
-      { 
+      {
         // earmarked_balance: Sequelize.literal(`earmarked_balance - ${withdrawData.balance}`) 
         earmarked_balance: -withdrawData.balance
       },
@@ -104,6 +106,19 @@ module.exports.initWithdraw = async (userId, withdrawData) => {
     await t.commit();
 
     // CREATE NOTIFICATION HERE LATER
+
+    try {
+      await notifyPocketMembers({
+        pocketId: withdrawData.pocket_id,
+        excludeUserId: userId,
+        title: `${formatCurrency(withdrawData.balance || 0)} telah ditarik dari pocket ${pocket.name}`,
+        body: `${user.name} telah melakukan penarikan sebesar ${formatCurrency(withdrawData.balance || 0)} dari pocket ${pocket.name}`,
+        message: `Penarikan dana berhasil dilakukan dari pocket ini.`,
+        transaction: t
+      })
+    } catch (error) {
+      logger.warn('Failed to send notification');
+    }
 
     return result;
   } catch (error) {

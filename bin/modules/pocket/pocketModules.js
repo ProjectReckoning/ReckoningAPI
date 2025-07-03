@@ -16,6 +16,7 @@ const MongoDb = require('../../config/database/mongodb/db');
 const mongoDb = new MongoDb(config.get('/mongoDbUrl'));
 const notificationModules = require('../users/notificationModules');
 const { ObjectId } = require("mongodb");
+const { formatCurrency } = require("../../helpers/utils/amountFormatter");
 
 module.exports.createPocket = async (pocketData, owner, additionalMembers) => {
   const t = await sequelize.transaction();
@@ -559,6 +560,34 @@ module.exports.updatePocket = async (pocketId, userId, updateData) => {
       updateData.deadline = deadline;
     }
 
+    if (updateData.name) {
+      try {
+        await notificationModules.notifyPocketMembers({
+          pocketId: pocketId,
+          excludeUserId: userId,
+          title: `Nama pocket “${pocket.name}” telah diperbarui`,
+          body: `Pocket “${pocket.name}” telah diganti menjadi “${updateData.name}”`,
+          message: `Nama pocket berhasil diperbarui.`,
+        })
+      } catch (error) {
+        logger.warn('Failed to send notification');
+      }
+    }
+
+    if (updateData.target_nominal) {
+      try {
+        await notificationModules.notifyPocketMembers({
+          pocketId: pocketId,
+          excludeUserId: userId,
+          title: `Target pocket “${pocket.name}” telah diperbarui`,
+          body: `Target pocket “${pocket.name}” telah diperbarui menjadi “${formatCurrency(updateData.target_nominal || 0)}”`,
+          message: `Target pocket berhasil diperbarui.`,
+        })
+      } catch (error) {
+        logger.warn('Failed to send notification');
+      }
+    }
+
     await pocket.update(updateData);
 
     return pocket;
@@ -823,6 +852,19 @@ module.exports.deletePocketMember = async (pocketId, userId, memberList) => {
         transaction: t,
       });
 
+      try {
+        await notificationModules.notifyPocketMembers({
+          pocketId: pocketId,
+          targetUserId: userId,
+          title: `Anda telah dikeluarkan dari pocket "${pocket.name}"`,
+          body: `Anda telah dikeluarkan dari pocket "${pocket.name}"`,
+          message: `Anda tidak lagi menjadi anggota pocket ini.`,
+          transaction: t,
+        })
+      } catch (error) {
+        logger.warn('Failed to send notification');
+      }
+
       totalDeleted += deletedCount;
     }
 
@@ -861,7 +903,7 @@ module.exports.leavePocket = async (pocketId, userId) => {
       transaction: t
     })
 
-    const [mock, pocket] = await Promise.all([
+    const [mock, pocket, user] = await Promise.all([
       MockSavingsAccount.findOne({
         where: {
           user_id: userId
@@ -873,7 +915,8 @@ module.exports.leavePocket = async (pocketId, userId) => {
           id: pocketId
         },
         transaction: t
-      })
+      }),
+      User.findByPk(userId, { transaction: t })
     ])
 
     if (!member) {
@@ -907,6 +950,19 @@ module.exports.leavePocket = async (pocketId, userId) => {
     }
 
     await Transaction.create(transactionData, { transaction: t });
+
+    try {
+      await notificationModules.notifyPocketMembers({
+        pocketId: pocketId,
+        excludeUserId: userId,
+        title: `${user.name} telah meninggalkan pocket "${pocket.name}"`,
+        body: `${user.name} telah meninggalkan pocket "${pocket.name}"`,
+        message: `Anggota telah keluar dari pocket ini.`,
+        transaction: t,
+      })
+    } catch (error) {
+      logger.warn('Failed to send notification');
+    }
 
     // Hapus diri sendiri dari pocket
     const deletedCount = await PocketMember.destroy({
