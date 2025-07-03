@@ -869,7 +869,7 @@ module.exports.leavePocket = async (pocketId, userId) => {
       }),
       Pocket.findOne({
         where: {
-          pocket_id: pocketId
+          id: pocketId
         },
         transaction: t
       })
