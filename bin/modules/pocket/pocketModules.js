@@ -315,7 +315,7 @@ module.exports.detailPocket = async (pocketId, userId) => {
     if (!data) return null;
 
     const history = await Transaction.findAll({
-      where: { 
+      where: {
         pocket_id: pocketId,
         status: 'completed',
       },
@@ -437,7 +437,7 @@ module.exports.getUserPockets = async (userId) => {
 
     const enrichedPockets = await Promise.all(pockets.map(async (pocket) => {
       const history = await Transaction.findAll({
-        where: { 
+        where: {
           pocket_id: pocket.id,
           status: 'completed',
         },
@@ -756,14 +756,14 @@ module.exports.deletePocketMember = async (pocketId, userId, memberList) => {
         pocket_id: pocketId,
         user_id: userId,
       },
-      transaction: t 
+      transaction: t
     });
 
     if (!isMember || (isMember.role !== "owner" && isMember.role !== "admin")) {
       throw new ForbiddenError("You do not have access to this pocket");
     }
 
-    const pocket = await Pocket.findByPk(pocketId, { transaction: t  });
+    const pocket = await Pocket.findByPk(pocketId, { transaction: t });
     if (!pocket) {
       throw new NotFoundError("Pocket not found");
     }
@@ -777,11 +777,11 @@ module.exports.deletePocketMember = async (pocketId, userId, memberList) => {
             user_id: memberId,
             pocket_id: pocketId,
           },
-          transaction: t 
+          transaction: t
         }),
         MockSavingsAccount.findOne({
           where: { user_id: memberId },
-          transaction: t 
+          transaction: t
         }),
       ]);
 
@@ -857,7 +857,7 @@ module.exports.leavePocket = async (pocketId, userId) => {
         pocket_id: pocketId,
         user_id: userId,
       },
-      transaction: t 
+      transaction: t
     })
 
     const [mock, pocket] = await Promise.all([
@@ -865,13 +865,13 @@ module.exports.leavePocket = async (pocketId, userId) => {
         where: {
           user_id: userId
         },
-        transaction: t 
+        transaction: t
       }),
       Pocket.findOne({
         where: {
           pocket_id: pocketId
         },
-        transaction: t 
+        transaction: t
       })
     ])
 
@@ -961,6 +961,14 @@ module.exports.updateRolePocketMember = async (
       },
     });
 
+    const pocketType = await Pocket.findOne({
+      where: {
+        id: pocketId,
+      },
+      attributes: ['type'],
+      raw: true
+    })
+
     if (!targetMember) {
       throw new NotFoundError("Target member not found in this pocket");
     }
@@ -982,7 +990,11 @@ module.exports.updateRolePocketMember = async (
     }
 
     // Owner bisa mengubah admin maupun member
-    targetMember.role = newRole;
+    let parseNewRole = newRole;
+    if (newRole === 'member' && pocketType === 'business') {
+      parseNewRole = 'spender';
+    }
+    targetMember.role = parseNewRole;
     await targetMember.save();
 
     return {
@@ -1171,7 +1183,7 @@ module.exports.getLast5BusinessTransactionsForUser = async (userId, pocketId = n
     if (businessPocketIds.length === 0) return [];
 
     const transactions = await Transaction.findAll({
-      where: { 
+      where: {
         pocket_id: { [Op.in]: businessPocketIds },
         status: 'completed'
       },
@@ -1303,7 +1315,7 @@ module.exports.getBEP = async (userData, pocketId) => {
         raw: true
       }),
       Transaction.findAll({
-        where: { 
+        where: {
           pocket_id: pocketId,
           type: 'Income',
           status: 'completed',
@@ -1312,8 +1324,8 @@ module.exports.getBEP = async (userData, pocketId) => {
         raw: true
       }),
       Transaction.findAll({
-        where: { 
-          pocket_id: pocketId, 
+        where: {
+          pocket_id: pocketId,
           type: 'Expense',
           status: 'completed',
         },
