@@ -134,7 +134,7 @@ const createPendingApproval = async ({ userData, transferData, approvers, pocket
     const pushToken = await notificationModules.getPushToken(user_id);
     const notifMessage = notificationModules.setNotificationData({
       pushToken,
-      title: `Needs approval for ${userData.name} transaction`,
+      title: `Butuh persetujuan untuk transaksi ${userData.name}`,
       body: notifData.message,
       data: notifData
     });
@@ -189,7 +189,7 @@ module.exports.initTransfer = async (userData, transferData) => {
 
     const isBusiness = pocket.type === 'business';
     const isInitiatorAdmin = ['admin', 'owner'].includes(member.role);
-    
+
     let result = {};
 
     if (isBusiness && isInitiatorAdmin) {
@@ -344,7 +344,7 @@ module.exports.initTransfer = async (userData, transferData) => {
         const notifData = {
           date: new Date(),
           type: 'transaction_approval_needed',
-          message: `${userData.name} needs your approval for his transaction. ${amount} will be withdrawn from your balance, you could accept or reject it`,
+          message: `${userData.name} memerlukan persetujuanmu untuk transaksinya. Transaksi sebesar Rp ${amount} akan ditarik dari saldomu, kamu bisa menerima atau menolaknya`,
           requestedBy: {
             id: userData.id,
             name: userData.name,
@@ -361,8 +361,8 @@ module.exports.initTransfer = async (userData, transferData) => {
         const pushToken = await notificationModules.getPushToken(user_id);
         const notifMessage = notificationModules.setNotificationData({
           pushToken,
-          title: `Needs approval for ${userData.name} transaction`,
-          body: `${userData.name} needs your approval for his transaction. ${amount} will be withdrawn from your balance, you could accept or reject it`,
+          title: `Butuh persetujuan untuk transaksi ${userData.name}`,
+          body: `${userData.name} memerlukan persetujuanmu untuk transaksinya. Transaksi sebesar Rp ${amount} akan ditarik dari saldomu, kamu bisa menerima atau menolaknya`,
           data: notifData
         })
 
@@ -566,14 +566,14 @@ module.exports.respondTransfer = async (userData, approvalData) => {
         const notifData = {
           date: new Date(),
           type: 'information',
-          message: `${userData.name} rejected your request. Transaction has been cancelled.`,
+          message: `${userData.name} menolak permintaanmu. Transaksi telah dibatalkan.`,
           user_id: transactionData.initiator_user_id
         }
         const pushToken = await notificationModules.getPushToken(transactionData.initiator_user_id);
         const notifMessage = notificationModules.setNotificationData({
           pushToken,
-          title: `Your transfer request was rejected`,
-          body: `${userData.name} rejected your request. Transaction has been cancelled.`,
+          title: `Permintaan transfermu ditolak`,
+          body: `${userData.name} menolak permintaanmu. Transaksi telah dibatalkan.`,
           data: notifData
         });
         await notificationModules.pushNotification(notifMessage);
@@ -622,14 +622,14 @@ module.exports.respondTransfer = async (userData, approvalData) => {
         const notifData = {
           date: new Date(),
           type: 'information',
-          message: `${userData.name} accepted your request. Transaction has been done.`,
+          message: `${userData.name} menerima permintaanmu. Transaksi telah selesai.`,
           user_id: transactionData.initiator_user_id
         }
         const pushToken = await notificationModules.getPushToken(transactionData.initiator_user_id);
         const notifMessage = notificationModules.setNotificationData({
           pushToken,
-          title: `Your transfer request was accepted`,
-          body: `${userData.name} accepted your request. Transaction has been done.`,
+          title: `Permintaan transfermu diterima`,
+          body: `${userData.name} menerima permintaanmu. Transaksi telah selesai.`,
           data: notifData
         });
         await notificationModules.pushNotification(notifMessage);

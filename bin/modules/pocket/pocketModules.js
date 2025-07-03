@@ -86,7 +86,7 @@ module.exports.inviteMember = async (userData, additionalMembers, pocketId) => {
           const notifData = {
             date: new Date(),
             type: 'member_approval_needed',
-            message: `${userData.name} has invited you to pocket ${pocket.name}, you could accept or reject it`,
+            message: `${userData.name} mengundangmu ke pocket ${pocket.name}, kamu bisa menerima atau menolaknya`,
             requestedBy: {
               id: userData.id,
               name: userData.name
@@ -99,7 +99,7 @@ module.exports.inviteMember = async (userData, additionalMembers, pocketId) => {
           const pushToken = await notificationModules.getPushToken(member.user_id);
           const notifMessage = notificationModules.setNotificationData({
             pushToken,
-            title: `Invitation to pocket ${pocket.name} from ${userData.name}`,
+            title: `Undangan ke pocket "${pocket.name}" dari ${userData.name}`,
             body: notifData.message,
             data: notifData
           });
@@ -208,17 +208,18 @@ module.exports.respondInvite = async (userData, responseData) => {
 
     try {
       // Send notification will be here
+      const responseMessageTranslate = responseData.response === 'accepted' ? 'menerima' : 'menolak'
       const notifData = {
         date: new Date(),
         type: 'information',
-        message: `${userData.name} already ${responseData.response} your invitation to pocket ${pocket.name}`,
+        message: `${userData.name} telah ${responseMessageTranslate} undanganmu ke pocket ${pocket.name}`,
         user_id: invitation.data.inviterUserId
       }
       const pushToken = await notificationModules.getPushToken(invitation.data.inviterUserId);
       const notifMessage = notificationModules.setNotificationData({
         pushToken,
         title: `${pocket.name}`,
-        body: `${userData.name} already ${responseData.response} your invitation`,
+        body: `${userData.name} telah ${responseMessageTranslate} undanganmu`,
         data: notifData
       })
 
@@ -297,6 +298,7 @@ module.exports.detailPocket = async (pocketId, userId) => {
         pocket_id: data.id,
         initiator_user_id: userId,
         type: 'Income',
+        status: 'completed',
         [Op.or]: [
           { category: 'topup' },
           { category: 'autobudget' }
@@ -313,7 +315,10 @@ module.exports.detailPocket = async (pocketId, userId) => {
     if (!data) return null;
 
     const history = await Transaction.findAll({
-      where: { pocket_id: pocketId },
+      where: { 
+        pocket_id: pocketId,
+        status: 'completed',
+      },
       order: [["createdAt", "DESC"]],
     });
 
@@ -432,7 +437,10 @@ module.exports.getUserPockets = async (userId) => {
 
     const enrichedPockets = await Promise.all(pockets.map(async (pocket) => {
       const history = await Transaction.findAll({
-        where: { pocket_id: pocket.id },
+        where: { 
+          pocket_id: pocket.id,
+          status: 'completed',
+        },
         order: [["createdAt", "DESC"]],
       });
 
@@ -660,7 +668,7 @@ module.exports.bulkAddMembersToPocket = async (userData, pocketId, memberDataArr
         const pushToken = await notificationModules.getPushToken(member.user_id);
         const notifMessage = notificationModules.setNotificationData({
           pushToken,
-          title: `Invitation to pocket ${pocket.name} from ${userData.name}`,
+          title: `Undangan ke pocket "${pocket.name}" dari ${userData.name}`,
           body: `${userData.name} has been invite you to pocket ${pocket.name}, you could accept or reject it`,
           data: notifData
         })
@@ -1060,6 +1068,7 @@ module.exports.getPocketHistory = async (pocketId, month) => {
         createdAt: {
           [Op.between]: [startDate, endDate],
         },
+        status: 'completed',
       },
       order: [["createdAt", "DESC"]],
     });
@@ -1115,6 +1124,7 @@ module.exports.getPocketHistory = async (pocketId, month) => {
         createdAt: {
           [Op.lt]: startDate,
         },
+        status: 'completed',
       },
     });
 
@@ -1161,7 +1171,10 @@ module.exports.getLast5BusinessTransactionsForUser = async (userId, pocketId = n
     if (businessPocketIds.length === 0) return [];
 
     const transactions = await Transaction.findAll({
-      where: { pocket_id: { [Op.in]: businessPocketIds } },
+      where: { 
+        pocket_id: { [Op.in]: businessPocketIds },
+        status: 'completed'
+      },
       order: [['createdAt', 'DESC']],
       limit: 5
     });
@@ -1217,6 +1230,7 @@ module.exports.getBusinessPocketTransactionHistory = async (userId, { pocketId =
     const transactions = await Transaction.findAll({
       where: {
         pocket_id: { [Op.in]: businessPocketIds },
+        status: 'completed',
         createdAt: { [Op.gte]: fromDate }
       },
       include: [{
@@ -1231,6 +1245,7 @@ module.exports.getBusinessPocketTransactionHistory = async (userId, { pocketId =
     const previousTransactions = await Transaction.findAll({
       where: {
         pocket_id: { [Op.in]: businessPocketIds },
+        status: 'completed',
         createdAt: { [Op.lt]: fromDate }
       }
     });
@@ -1288,12 +1303,20 @@ module.exports.getBEP = async (userData, pocketId) => {
         raw: true
       }),
       Transaction.findAll({
-        where: { pocket_id: pocketId, type: 'Income' },
+        where: { 
+          pocket_id: pocketId,
+          type: 'Income',
+          status: 'completed',
+        },
         order: [['updatedAt', 'DESC'], ['createdAt', 'DESC']],
         raw: true
       }),
       Transaction.findAll({
-        where: { pocket_id: pocketId, type: 'Expense' },
+        where: { 
+          pocket_id: pocketId, 
+          type: 'Expense',
+          status: 'completed',
+        },
         order: [['updatedAt', 'DESC'], ['createdAt', 'DESC']],
         raw: true
       }),
