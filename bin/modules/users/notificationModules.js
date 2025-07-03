@@ -98,6 +98,8 @@ module.exports.getAllNotif = async (notifData) => {
     mongoDb.setCollection('notifications');
     const notif = await mongoDb.findMany({
       'data.user_id': Number(notifData.userId)
+    }, {
+      'data.date': -1
     })
 
     if (!notif.data) {

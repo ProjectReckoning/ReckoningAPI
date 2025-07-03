@@ -824,7 +824,6 @@ const getTrfSchedForAdmin = async (pocket_id) => {
   const scheduleTransfer = await AutoBudgeting.findAll({
     where: {
       pocket_id: pocket_id,
-      is_active: true
     },
     attributes: [
       'id',
@@ -844,7 +843,6 @@ const getTrfSchedForMember = async (userData, pocket_id) => {
     where: {
       user_id: userData.id,
       pocket_id: pocket_id,
-      is_active: true
     },
     attributes: [
       'id',
@@ -948,7 +946,6 @@ module.exports.getDetailTransferSchedule = async (userData, pocket_id, schedule_
       where: {
         id: schedule_id,
         pocket_id: pocket_id,
-        is_active: true
       },
       attributes: ['id', 'recurring_amount', 'next_run_date', 'status'],
       raw: true
@@ -997,6 +994,7 @@ module.exports.deleteTransferSchedule = async (userData, pocket_id, schedule_id)
     });
 
     existAutoBudget.status = 'inactive';
+    existAutoBudget.is_active = false;
     await existAutoBudget.save({ transaction: t });
 
     await t.commit();
