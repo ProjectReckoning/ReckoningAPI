@@ -1463,7 +1463,13 @@ module.exports.getAllBusinessStats = async (userId, type) => {
         status: 'completed'
       },
       order: [['createdAt', 'ASC']],
-      attributes: ['createdAt']
+      attributes: ['createdAt'],
+      include: [{
+        model: Pocket,
+        as: 'pocket',
+        attributes: [],
+        where: { type: 'business' } // 👈 Filter only business pockets
+      }]
     });
 
     if (!earliestTransaction) return [];
@@ -1477,7 +1483,7 @@ module.exports.getAllBusinessStats = async (userId, type) => {
         status: 'completed'
       },
       attributes: ['amount', 'type', 'createdAt', 'pocket_id'],
-      include: [{ model: Pocket, as: 'pocket', attributes: ['name'] }]
+      include: [{ model: Pocket, as: 'pocket', attributes: ['name'], where: { type: 'business' } }]
     });
 
     if (!transactions.length) return [];
