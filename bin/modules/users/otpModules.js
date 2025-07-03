@@ -56,8 +56,8 @@ module.exports.requestOtp = async (reqOtpData) => {
     const messages = [{
       to: pushEntry.data.expoPushToken,
       sound: 'default',
-      title: 'Your OTP Code to login in website',
-      body: `Your OTP is ${otp}`,
+      title: 'Ini kode OTP kamu untuk login di website',
+      body: `Kode OTP kamu adalah ${otp}`,
       data: notifData
     }];
 

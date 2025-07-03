@@ -48,7 +48,7 @@ class DB {
 
   }
 
-  async findMany(parameter) {
+  async findMany(parameter, sort = null) {
     const ctx = 'mongodb-findMany';
     const dbName = await this.getDatabase();
     // const result = await mongoConnection.getConnection(this.config);
@@ -57,7 +57,12 @@ class DB {
       // const cacheConnection = result.data.db;
       const connection = this.client.db(dbName);
       const db = connection.collection(this.collectionName);
-      const recordset = await db.find(parameter).toArray();
+      let query = db.find(parameter);
+      if (sort) {
+        query = query.sort(sort);
+      }
+      const recordset = await query.toArray();
+
       if (validate.isEmpty(recordset)) {
         return wrapper.error('Data Not Found , Please Try Another Input');
       }

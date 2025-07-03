@@ -117,7 +117,7 @@ const createPendingApproval = async ({ userData, transferData, approvers, pocket
     const notifData = {
       date: new Date(),
       type: 'transaction_approval_needed',
-      message: `${userData.name} needs your approval for a transaction. ${amount} will be withdrawn from your balance.`,
+      message: `${userData.name} memerlukan persetujuanmu untuk transaksinya. Transaksi sebesar ${amount} akan ditarik dari saldomu`,
       requestedBy: {
         id: userData.id,
         name: userData.name
