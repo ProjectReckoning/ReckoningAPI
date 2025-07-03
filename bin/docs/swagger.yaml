@@ -1570,7 +1570,7 @@ paths:
           description: Pocket not found
 
   /pocket/{pocketId}/members/kick:
-    delete:
+    post:
         summary: Delete members from a pocket
         tags:
           - Pocket Member Management
