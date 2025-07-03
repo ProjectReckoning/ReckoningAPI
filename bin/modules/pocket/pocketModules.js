@@ -433,6 +433,7 @@ module.exports.getUserPockets = async (userId) => {
           attributes: ["role"],
         },
       ],
+      order: [[{ model: PocketMember, as: 'pocketMembers' }, 'joined_at', 'ASC']],
     });
 
     const enrichedPockets = await Promise.all(pockets.map(async (pocket) => {
