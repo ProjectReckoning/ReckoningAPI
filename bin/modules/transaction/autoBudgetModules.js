@@ -118,7 +118,7 @@ module.exports.setAutoBudget = async (autoBudgetData) => {
         status: 'active',
         is_active: true
       },
-      transaction: t 
+      transaction: t
     });
 
     // If it exist, delete first
@@ -127,7 +127,7 @@ module.exports.setAutoBudget = async (autoBudgetData) => {
     }
 
     // Create new one
-    autoBudgetData.nextRunDate = calculateNextRunDate(autoBudgetData.schedule_type, autoBudgetData.schedule_value);
+    autoBudgetData.next_run_date = calculateNextRunDate(autoBudgetData.schedule_type, autoBudgetData.schedule_value);
 
     const budget = await AutoBudgeting.create(autoBudgetData, { transaction: t });
 

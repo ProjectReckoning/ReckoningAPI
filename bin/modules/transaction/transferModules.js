@@ -483,7 +483,7 @@ module.exports.executeSplitTransfer = async (trxId, transferData, splitResult, t
   );
 
   // Update transaction log
-  const trxData = await Transaction.findByPk(trxId);
+  const trxData = await Transaction.findByPk(trxId, { transaction : t});
 
   const result = await trxData.update({ status: 'completed' }, { transaction: t });
 
@@ -784,7 +784,7 @@ module.exports.processRecurringAutoTransfer = async (budget) => {
 
     const splitResult = calculateSmartSplit({
       initiatorUserId: budget.user_id,
-      totalBalance,
+      totalBalance: budget.recurring_amount,
       transferAmount: budget.recurring_amount,
       members
     })
