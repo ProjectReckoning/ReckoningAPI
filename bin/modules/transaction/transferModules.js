@@ -189,6 +189,8 @@ module.exports.initTransfer = async (userData, transferData) => {
 
     const isBusiness = pocket.type === 'business';
     const isInitiatorAdmin = ['admin', 'owner'].includes(member.role);
+    
+    let result = {};
 
     if (isBusiness && isInitiatorAdmin) {
       const adminMembers = await PocketMember.findAll({
@@ -278,7 +280,6 @@ module.exports.initTransfer = async (userData, transferData) => {
     // Check if user's contribution amount in pocket is enough to make the transaction
     // If not, then calculate the percentage of contribution for each member of the pocket
     // CASE 1: Initiator can fully cover
-    let result = {};
     if (member.contribution_amount >= transferData.balance) {
       const is_business = pocket.type == 'business';
       result = await this.executeDirectTransfer(userData, transferData, t, is_business);
@@ -483,7 +484,7 @@ module.exports.executeSplitTransfer = async (trxId, transferData, splitResult, t
   );
 
   // Update transaction log
-  const trxData = await Transaction.findByPk(trxId, { transaction : t});
+  const trxData = await Transaction.findByPk(trxId, { transaction: t });
 
   const result = await trxData.update({ status: 'completed' }, { transaction: t });
 

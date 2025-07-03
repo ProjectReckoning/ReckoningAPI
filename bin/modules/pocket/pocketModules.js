@@ -1170,7 +1170,8 @@ module.exports.getLast5BusinessTransactionsForUser = async (userId, pocketId = n
       type: tx.type,
       description: tx.description,
       amount: tx.amount,
-      transaction_type: tx.type === 'Income' ? 1 : 0
+      transaction_type: tx.type === 'Income' ? 1 : 0,
+      category: tx.category
     }));
 
     return result;
