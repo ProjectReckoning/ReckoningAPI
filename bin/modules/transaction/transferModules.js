@@ -345,7 +345,7 @@ module.exports.initTransfer = async (userData, transferData) => {
         const notifData = {
           date: new Date(),
           type: 'transaction_approval_needed',
-          message: `${userData.name} memerlukan persetujuanmu untuk transaksinya. Transaksi sebesar Rp ${formatCurrency(amount || 0)} akan ditarik dari saldomu, kamu bisa menerima atau menolaknya`,
+          message: `${userData.name} memerlukan persetujuanmu untuk transaksinya. Transaksi sebesar ${formatCurrency(amount || 0)} akan ditarik dari saldomu, kamu bisa menerima atau menolaknya`,
           requestedBy: {
             id: userData.id,
             name: userData.name,
@@ -363,7 +363,7 @@ module.exports.initTransfer = async (userData, transferData) => {
         const notifMessage = notificationModules.setNotificationData({
           pushToken,
           title: `Butuh persetujuan untuk transaksi ${userData.name}`,
-          body: `${userData.name} memerlukan persetujuanmu untuk transaksinya. Transaksi sebesar Rp ${formatCurrency(amount || 0)} akan ditarik dari saldomu, kamu bisa menerima atau menolaknya`,
+          body: `${userData.name} memerlukan persetujuanmu untuk transaksinya. Transaksi sebesar ${formatCurrency(amount || 0)} akan ditarik dari saldomu, kamu bisa menerima atau menolaknya`,
           data: notifData
         })
 
