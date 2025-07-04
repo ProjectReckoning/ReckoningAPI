@@ -962,7 +962,7 @@ module.exports.getDetailTransferSchedule = async (userData, pocket_id, schedule_
         id: schedule_id,
         pocket_id: pocket_id,
       },
-      attributes: ['id', 'recurring_amount', 'next_run_date', 'status'],
+      attributes: ['id', 'recurring_amount', 'next_run_date', 'status', 'category'],
       raw: true
     });
 
