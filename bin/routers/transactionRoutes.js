@@ -1,6 +1,7 @@
 const express = require('express');
 const transactionController = require('../controllers/transaction/transactionController');
 const userAuth = require('../middlewares/userAuth');
+const { runAutoBudgetJob } = require('../modules/transaction/autoBudgetModules');
 
 const router = express.Router();
 
@@ -24,5 +25,15 @@ router.post('/transfer/schedule', userAuth.authenticateToken, transactionControl
 router.get('/transfer/schedule/:pocketId', userAuth.authenticateToken, transactionController.getTransferSchedule);
 router.get('/transfer/schedule/:pocketId/:scheduleId', userAuth.authenticateToken, transactionController.getDetailTransferSchedule);
 router.delete('/transfer/schedule/:pocketId/:scheduleId', userAuth.authenticateToken, transactionController.deleteTransferSchedule);
+
+// FOR DEMO PURPOSE
+router.get('/run-all-cron-job', (req, res) => {
+  // if (req.user.role !== 'admin') {
+  //   return res.status(403).json({ message: 'Forbidden' });
+  // }
+  runAutoBudgetJob()
+    .then(() => res.status(200).json({ message: 'Cron job executed' }))
+    .catch(err => res.status(500).json({ message: 'Error running cron job', error: err.message }));
+});
 
 module.exports = router;

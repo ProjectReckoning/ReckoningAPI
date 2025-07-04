@@ -23,8 +23,38 @@ class AppServer {
     this.server.use(bodyParser.json());
     this.server.use(bodyParser.urlencoded({ extended: true }));
 
-    this.server.use(cors());
-    // this.server.use(helmet()); //enable when in prod
+    const allowedOrigins = [
+      process.env.API_URL,
+      process.env.WEB_URL,  // FE web (prod)
+      'http://localhost:3000',                             // FE web (dev)
+      'exp://127.0.0.1:19000',                              // Expo Go tunnel
+      'http://localhost:19006',                            // Expo web preview
+      'http://localhost:8080',
+      undefined                         // mobile apps using fetch/axios without Origin
+    ];
+
+
+    const ipLANPattern = /^http:\/\/192\.168\.\d+\.\d+:19000$/;
+    const tunnelPattern = /^https:\/\/.+\.trycloudflare\.com$/;
+
+    this.server.use(cors({
+      origin: (origin, cb) => {
+        if (
+          !origin ||                                     // Mobile apps (no Origin)
+          allowedOrigins.includes(origin) ||             // Exact matches
+          ipLANPattern.test(origin) ||                   // Expo LAN preview
+          tunnelPattern.test(origin)                     // Expo tunnel (optional)
+        ) {
+          cb(null, true);
+        } else {
+          cb(new Error('Not allowed by CORS: ' + origin));
+        }
+      },
+    }));
+
+    this.server.use(helmet({
+      contentSecurityPolicy: false
+    })); //enable when in prod
     this.server.set('trust proxy', 1);
 
     this.server.use(morgan(':method: :url :status :response-time ms - :res[content-length]', { stream: morganStream }));
