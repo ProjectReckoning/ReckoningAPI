@@ -85,6 +85,20 @@ const calculateSmartSplit = ({
     if (!assigned) break;
   }
 
+  if (remaining > 0 && remaining < 1000) {
+    for (const uid of roundRobinOrder) {
+      const currentUsed = usedContribution.get(uid) || 0;
+      const maxAllowed = baseSplits.find(m => m.user_id === uid)?.contribution_amount || 0;
+
+      if (currentUsed + remaining <= maxAllowed) {
+        resultMap.set(uid, resultMap.get(uid) + remaining);
+        usedContribution.set(uid, currentUsed + remaining);
+        remaining = 0;
+        break;
+      }
+    }
+  }
+
   return Array.from(resultMap, ([user_id, amount]) => ({ user_id, amount }));
 }
 
