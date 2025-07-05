@@ -6,6 +6,7 @@ const SALT_ROUNDS = process.env.SALT_ROUNDS;
 const { User, MockSavingsAccount, sequelize } = require('../../models');
 const jwt = require('jsonwebtoken');
 const { generateUniqueAccountNumber } = require('../pocket/pocketModules');
+const redis = require('../../config/redis');
 
 module.exports.generateToken = async (data) => {
   const token = jwt.sign(data, config.get('/authentication'), {
@@ -30,7 +31,7 @@ module.exports.registerUser = async (inputData) => {
 
     inputData.password = await bcrypt.hash(inputData.password, +SALT_ROUNDS);
 
-    const dataUser = await User.create(inputData, { transaction : t});
+    const dataUser = await User.create(inputData, { transaction: t });
 
     const resultUser = dataUser.get({ plain: true });
     delete resultUser.password;
@@ -125,19 +126,39 @@ module.exports.loginUser = async (loginData) => {
 
 module.exports.userProfile = async (userData) => {
   try {
-    const user = await User.findOne({
-      where: {
-        phone_number: userData.phone_number
+    const cacheKey = `user:${userData.phone_number}`
+    const cache = await redis.get(cacheKey);
+    let user = null;
+    if (cache) {
+      try {
+        user = JSON.parse(cache);
+      } catch (err) {
+        logger.error(`Failed to parse cache for key ${cacheKey}`, err);
+        await redis.del(cacheKey);
       }
-    });
+    }
+
+    if (!user) {
+      user = await User.findOne({
+        where: {
+          phone_number: userData.phone_number
+        }
+      });
+
+      if (!user) {
+        throw new NotFoundError('User with that phone number not found');
+      }
+
+      await redis.set(cacheKey, JSON.stringify(user), 'EX', 180);
+    }
 
     const mock = await MockSavingsAccount.findOne({
-      where : {
+      where: {
         user_id: user.id
       }
     });
 
-    if (!user || !mock) {
+    if (!mock) {
       throw new NotFoundError('User with that phone number not found');
     }
 

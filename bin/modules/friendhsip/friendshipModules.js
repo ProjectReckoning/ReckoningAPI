@@ -7,6 +7,7 @@ const {
 const { MockSavingsAccount, Friendship, User, sequelize } = require("../../models");
 const logger = require("../../helpers/utils/logger");
 const { where, Op } = require("sequelize");
+const redis = require("../../config/redis");
 
 module.exports.sendBulkFriendshipRequest = async (
   senderUserId,
@@ -152,6 +153,9 @@ module.exports.addFriends = async (userData, phone_numbers) => {
 
     await t.commit();
 
+    const cacheKey = `friendship:${user.id}`;
+    await redis.del(cacheKey);
+
     return {
       added: newFriends.map(f => f.phone_number),
       skipped: validPhoneNumbers.filter(pn => !newFriends.some(f => f.phone_number === pn)),
@@ -264,6 +268,17 @@ module.exports.getAllFriendshipRequests = async (userId) => {
 
 module.exports.getFriendship = async (userId) => {
   try {
+    const cacheKey = `friendship:${userId}`;
+    const cache = await redis.get(cacheKey);
+    if (cache) {
+      try {
+        return JSON.parse(cache);
+      } catch (error) {
+        logger.error(`Failed to parse cache for key ${cacheKey}`, err);
+        await redis.del(cacheKey);
+      }
+    }
+
     const friendships = await Friendship.findAll({
       where: {
         [Op.or]: [
@@ -300,7 +315,7 @@ module.exports.getFriendship = async (userId) => {
     });
 
     if (friendships.length === 0) {
-      throw new NotFoundError("No friendships found");
+      return [];
     }
 
     const friends = friendships.map(friendship => {
@@ -316,6 +331,8 @@ module.exports.getFriendship = async (userId) => {
         accepted_at: friendship.accepted_at,
       };
     });
+
+    await redis.set(cacheKey, JSON.stringify(friends), 'EX', 180)
 
     return friends;
   } catch (error) {

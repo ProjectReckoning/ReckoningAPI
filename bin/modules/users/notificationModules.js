@@ -10,6 +10,7 @@ const { ObjectId } = require('mongodb');
 const expo = new Expo();
 const { PocketMember } = require('../../models');
 const { Op } = require('sequelize');
+const redis = require('../../config/redis');
 
 module.exports.registerPushToken = async (notifData) => {
   try {
@@ -79,6 +80,17 @@ module.exports.pushNotification = async (messages) => {
     for (let chunk of chunks) {
       await expo.sendPushNotificationsAsync(chunk);
     }
+
+    // Invalidate cache for all unique user_ids in messages
+    const userIds = new Set();
+    messages.forEach(msg => {
+      const userId = msg?.data?.user_id;
+      if (userId) userIds.add(userId);
+    });
+
+    for (const userId of userIds) {
+      await redis.del(`allNotif:${userId}`);
+    }
   } catch (error) {
     logger.error(error);
     throw new InternalServerError(error.message);
@@ -97,12 +109,24 @@ module.exports.getPushToken = async (userId) => {
 
 module.exports.getAllNotif = async (notifData) => {
   try {
+    const cacheKey = `allNotif:${notifData.userId}`
+    const cache = await redis.get(cacheKey);
+    if (cache) {
+      try {
+        return JSON.parse(cache);
+      } catch (error) {
+        logger.error(`Failed to parse cache for key ${cacheKey}`, err);
+        await redis.del(cacheKey);
+      }
+    }
     mongoDb.setCollection('notifications');
     const notif = await mongoDb.findMany({
       'data.user_id': Number(notifData.userId)
     }, {
       'data.date': -1
     })
+
+    await redis.set(cacheKey, JSON.stringify(notif.data), 'EX', 180);
 
     if (!notif.data) {
       return [];
@@ -167,6 +191,8 @@ module.exports.sendInformationNotif = async ({ title, body, message, user_id }) 
 
     mongoDb.setCollection('notifications');
     await mongoDb.insertOne(notifMessage[0]);
+    const cacheKey = `allNotif:${user_id}`
+    await redis.del(cacheKey);
 
     logger.info('Send notification success');
     return;
