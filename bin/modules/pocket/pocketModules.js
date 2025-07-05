@@ -831,7 +831,7 @@ module.exports.deletePocketMember = async (pocketId, userId, memberList) => {
 
       const transactionData = {
         pocket_id: pocketId,
-        initiator_user_id: memberId,
+        initiator_user_id: userId,
         type: 'Expense',
         amount: member.contribution_amount,
         destination_acc: 'BNI - [NO REKENING]',
@@ -855,7 +855,7 @@ module.exports.deletePocketMember = async (pocketId, userId, memberList) => {
       try {
         await notificationModules.notifyPocketMembers({
           pocketId: pocketId,
-          targetUserId: userId,
+          targetUserId: memberId,
           title: `Anda telah dikeluarkan dari pocket "${pocket.name}"`,
           body: `Anda telah dikeluarkan dari pocket "${pocket.name}"`,
           message: `Anda tidak lagi menjadi anggota pocket ini.`,
