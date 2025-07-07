@@ -165,6 +165,7 @@ const createPendingApproval = async ({ userData, transferData, approvers, pocket
 module.exports.initTransfer = async (userData, transferData) => {
   const t = await sequelize.transaction();
   try {
+    logger.info("Querying user, pocket, member and mock account");
     const [user, pocket, member, mockAcc] = await Promise.all([
       User.findOne({
         where: {
@@ -208,6 +209,8 @@ module.exports.initTransfer = async (userData, transferData) => {
     let result = {};
 
     if (isBusiness && isInitiatorAdmin) {
+      logger.info("Is Business and Is Admin")
+      logger.info("Query pocket's member")
       const adminMembers = await PocketMember.findAll({
         where: {
           pocket_id: transferData.pocket_id,
@@ -219,9 +222,13 @@ module.exports.initTransfer = async (userData, transferData) => {
 
       if (adminMembers.length === 1) {
         // Only initiator is admin/owner → direct transfer
-        return await this.executeDirectTransfer(userData, transferData, t, true);
+        logger.info("Execute direct transfer");
+        const resultDirect = await this.executeDirectTransfer(userData, transferData, t, true);
+        await t.commit();
+        return resultDirect;
       } else {
         // Multiple admins/owners → always split (even if initiator can cover it)
+        logger.info("Calculate smart split")
         const splitResult = calculateSmartSplit({
           initiatorUserId: userData.id,
           totalBalance: pocket.current_balance,
@@ -234,18 +241,23 @@ module.exports.initTransfer = async (userData, transferData) => {
           throw new ConflictError("Unable to distribute full transfer amount across admins/owners");
         }
 
-        return await createPendingApproval({
+        logger.info("Send approval notifications to all admins")
+        const resultPending = await createPendingApproval({
           userData,
           transferData,
           approvers: splitResult,
           pocket,
           t
         });
+        await t.commit();
+        return resultPending;
       }
     }
 
     // If the pocket is business and the initiator is not admin/owner → route to admin approval
     if (isBusiness && !isInitiatorAdmin) {
+      logger.info("Is business and not admin")
+      logger.info("Querying pocket's members");
       const approverMembers = await PocketMember.findAll({
         where: {
           pocket_id: transferData.pocket_id,
@@ -261,16 +273,20 @@ module.exports.initTransfer = async (userData, transferData) => {
       // If only one admin/owner, send approval to them only
       if (approverMembers.length === 1) {
         const approver = approverMembers[0];
-        return await createPendingApproval({
+        logger.info("Send approval to one admin");
+        const resultPending = await createPendingApproval({
           userData,
           transferData,
           approvers: [approver],
           pocket,
           t
         });
+        await t.commit();
+        return resultPending;
       }
 
       // Multiple admins/owners — split using calculateSmartSplit
+      logger.info("Calculate smart split");
       const splitResult = calculateSmartSplit({
         initiatorUserId: userData.id, // not included in split
         totalBalance: pocket.current_balance,
@@ -283,29 +299,39 @@ module.exports.initTransfer = async (userData, transferData) => {
         throw new ConflictError("Unable to distribute full transfer amount across admins/owners");
       }
 
-      return await createPendingApproval({
+      logger.info("Send approvals to all admin")
+      const resultPending = await createPendingApproval({
         userData,
         transferData,
         approvers: splitResult,
         pocket,
         t
       });
+      await t.commit();
+      return resultPending;
     }
 
     // Check if user's contribution amount in pocket is enough to make the transaction
     // If not, then calculate the percentage of contribution for each member of the pocket
     // CASE 1: Initiator can fully cover
+    logger.info("Not business");
     if (member.contribution_amount >= transferData.balance) {
       const is_business = pocket.type == 'business';
-      return await this.executeDirectTransfer(userData, transferData, t, is_business);
+      logger.info("Execute direct transfer")
+      const resultDirect = await this.executeDirectTransfer(userData, transferData, t, is_business);
+      await t.commit();
+      return resultDirect;
     } else {
       // CASE 2: Initiator needs help — SmartSplit + apply to multiple members
+      logger.info("Amount is above contribution");
+      logger.info("Querying pocket's members");
       const members = await PocketMember.findAll({
         where: { pocket_id: transferData.pocket_id },
         attributes: ['user_id', 'contribution_amount'],
         transaction: t
       });
 
+      logger.info("Calculate smart split");
       const splitResult = calculateSmartSplit({
         initiatorUserId: userData.id,
         totalBalance: pocket.current_balance,
@@ -320,6 +346,7 @@ module.exports.initTransfer = async (userData, transferData) => {
 
 
       // Create transaction log
+      logger.info("Create transaction log");
       const transactionData = {
         pocket_id: transferData.pocket_id,
         initiator_user_id: userData.id,
@@ -332,9 +359,11 @@ module.exports.initTransfer = async (userData, transferData) => {
         is_business_expense: false
       };
 
+      logger.info("Insert the transaction log");
       result = await Transaction.create(transactionData, { transaction: t });
 
       // Save split result to mongo
+      logger.info("Save split data to mongo");
       const pocketSplitData = {
         transaction_id: result.id,
         splitResult
@@ -345,6 +374,7 @@ module.exports.initTransfer = async (userData, transferData) => {
       result.splitData = splitData.data.splitResult;
 
       // Send approval notification
+      logger.info("Send approval notifications");
       for (const { user_id, amount } of splitResult) {
         if (user_id === userData.id) continue;
 
@@ -354,6 +384,7 @@ module.exports.initTransfer = async (userData, transferData) => {
           approver_user_id: user_id,
         }
 
+        logger.info("Create transaction approval data")
         await TransactionApproval.create(approvalData, { transaction: t });
 
         const notifData = {
@@ -373,6 +404,7 @@ module.exports.initTransfer = async (userData, transferData) => {
           response: null,
         }
 
+        logger.info("Send notifications");
         const pushToken = await notificationModules.getPushToken(user_id);
         const notifMessage = notificationModules.setNotificationData({
           pushToken,
@@ -383,6 +415,7 @@ module.exports.initTransfer = async (userData, transferData) => {
 
         await notificationModules.pushNotification(notifMessage);
 
+        logger.info("Save notifications data");
         mongoDb.setCollection('notifications');
         await mongoDb.insertOne(notifMessage[0]);
       }
