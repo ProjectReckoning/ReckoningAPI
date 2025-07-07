@@ -102,11 +102,7 @@ module.exports.initWithdraw = async (userId, withdrawData) => {
     }
 
     const result = await Transaction.create(transactionData, { transaction: t });
-
-    await t.commit();
-
-    // CREATE NOTIFICATION HERE LATER
-
+    
     try {
       await notifyPocketMembers({
         pocketId: withdrawData.pocket_id,
@@ -120,6 +116,8 @@ module.exports.initWithdraw = async (userId, withdrawData) => {
       logger.warn('Failed to send notification');
     }
 
+    await t.commit();
+    
     return result;
   } catch (error) {
     logger.error(error);

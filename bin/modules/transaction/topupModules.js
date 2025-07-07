@@ -103,8 +103,7 @@ module.exports.initTopUp = async (userId, topupData) => {
 
     const result = await Transaction.create(transactionData, { transaction: t });
 
-    await t.commit();
-
+    
     // CREATE NOTIFICATION HERE LATER
     try {
       await notifyPocketMembers({
@@ -118,6 +117,8 @@ module.exports.initTopUp = async (userId, topupData) => {
     } catch (error) {
       logger.warn('Failed to send notification');
     }
+    
+    await t.commit();
 
     return result;
   } catch (error) {

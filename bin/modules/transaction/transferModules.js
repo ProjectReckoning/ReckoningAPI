@@ -219,7 +219,7 @@ module.exports.initTransfer = async (userData, transferData) => {
 
       if (adminMembers.length === 1) {
         // Only initiator is admin/owner → direct transfer
-        result = await this.executeDirectTransfer(userData, transferData, t, true);
+        return await this.executeDirectTransfer(userData, transferData, t, true);
       } else {
         // Multiple admins/owners → always split (even if initiator can cover it)
         const splitResult = calculateSmartSplit({
@@ -297,7 +297,7 @@ module.exports.initTransfer = async (userData, transferData) => {
     // CASE 1: Initiator can fully cover
     if (member.contribution_amount >= transferData.balance) {
       const is_business = pocket.type == 'business';
-      result = await this.executeDirectTransfer(userData, transferData, t, is_business);
+      return await this.executeDirectTransfer(userData, transferData, t, is_business);
     } else {
       // CASE 2: Initiator needs help — SmartSplit + apply to multiple members
       const members = await PocketMember.findAll({
