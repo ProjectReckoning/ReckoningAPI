@@ -92,7 +92,7 @@ module.exports.loginUser = async (loginData) => {
     });
 
     if (!userData) {
-      throw new NotFoundError('User not found');
+      throw new NotFoundError('Wrong phone number / password');
     };
 
     const isMatch = await bcrypt.compare(loginData.password, userData.password);

@@ -767,7 +767,7 @@ module.exports.getMembersOfPocket = async (pocketId, userId) => {
     });
 
     if (!members || members.length === 0) {
-      throw new NotFoundError("No members found for this pocket");
+      return [];
     }
 
     return members;
@@ -1525,7 +1525,7 @@ module.exports.getAllBusinessStats = async (userId, type) => {
         model: Pocket,
         as: 'pocket',
         attributes: [],
-        where: { type: 'business' } // 👈 Filter only business pockets
+        where: { type: 'business' }
       }]
     });
 
