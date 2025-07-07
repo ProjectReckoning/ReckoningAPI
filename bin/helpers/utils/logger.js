@@ -1,10 +1,18 @@
 const { createLogger, transports, format } = require('winston');
+const DailyRotateFile = require('winston-daily-rotate-file');
 
 const logger = createLogger({
   level: 'info',
   transports: [
     new transports.Console(),
     // new transports.File({ filename: 'app.log' }) // optional
+    new DailyRotateFile({
+      filename: 'logs/reckoningAPI-%DATE%.log',
+      datePattern: 'YYYY-MM-DD',
+      zippedArchive: false,
+      maxSize: '20m',
+      maxFiles: '14d'
+    })
   ],
   format: format.combine(
     format.timestamp(),
