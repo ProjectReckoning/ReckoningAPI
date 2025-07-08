@@ -1428,23 +1428,51 @@ const analyzeProfitOrLoss = ({
   expenseHistory,
   lossProjectionRates = [0.1, 0.2]
 }) => {
-  const totalIncome = incomeHistory.reduce((sum, tx) => sum + tx.amount, 0);
-  const totalExpense = expenseHistory.reduce((sum, tx) => sum + tx.amount, 0);
+
+
+  const safeAmount = val => {
+    const n = Number(val);
+    return typeof n === 'number' && isFinite(n) ? n : 0;
+  };
+
+  const isValidDate = d =>
+    d instanceof Date && !isNaN(d);
+
+  // Calculate total income and expense safely
+  const totalIncome = incomeHistory.reduce(
+    (sum, tx) => sum + safeAmount(tx.amount),
+    0
+  );
+
+  const totalExpense = expenseHistory.reduce(
+    (sum, tx) => sum + safeAmount(tx.amount),
+    0
+  );
+
   const cleanProfit = totalIncome - totalExpense;
 
-  // Group by day for daily clean profit
+
+  // Group by date
   const dateMap = {};
 
   incomeHistory.forEach(tx => {
-    const date = tx.createdAt.toISOString().slice(0, 10);
+    const date = isValidDate(tx.createdAt)
+      ? tx.createdAt.toISOString().slice(0, 10)
+      : null;
+    if (!date) return;
+
     if (!dateMap[date]) dateMap[date] = { income: 0, expense: 0 };
-    dateMap[date].income += tx.amount;
+    dateMap[date].income += safeAmount(tx.amount);
   });
 
   expenseHistory.forEach(tx => {
-    const date = tx.createdAt.toISOString().slice(0, 10);
+    const date = isValidDate(tx.createdAt)
+      ? tx.createdAt.toISOString().slice(0, 10)
+      : null;
+    if (!date) return;
+
     if (!dateMap[date]) dateMap[date] = { income: 0, expense: 0 };
-    dateMap[date].expense += tx.amount;
+    dateMap[date].expense += safeAmount(tx.amount);
   });
 
   const dailyCleanProfits = Object.values(dateMap).map(
@@ -1452,11 +1480,15 @@ const analyzeProfitOrLoss = ({
   );
 
   const averageDailyCleanProfit =
-    dailyCleanProfits.reduce((sum, val) => sum + val, 0) / dailyCleanProfits.length || 0;
+    dailyCleanProfits.length > 0
+      ? dailyCleanProfits.reduce((sum, val) => sum + val, 0) / dailyCleanProfits.length
+      : 0;
 
   if (cleanProfit >= 0) {
     const profitPercentage = (cleanProfit / modalAwal) * 100;
-    const daysToReachBEP = modalAwal / averageDailyCleanProfit;
+    const daysToReachBEP = averageDailyCleanProfit > 0
+      ? modalAwal / averageDailyCleanProfit
+      : Infinity;
 
     return {
       status: 'profit',
@@ -1468,12 +1500,26 @@ const analyzeProfitOrLoss = ({
   } else {
     const loss = -cleanProfit;
 
-    const currentAverageIncome =
-      incomeHistory.reduce((sum, tx) => sum + tx.amount, 0) / dailyCleanProfits.length || 0;
+    if (dailyCleanProfits.length === 0) {
+      return {
+        status: 'loss',
+        loss,
+        averageDailyCleanProfit: 0,
+        projections: lossProjectionRates.map(rate => ({
+          increaseRate: `${rate * 100}%`,
+          increasedIncome: 0,
+          projectedDailyProfit: 0,
+          estimatedDaysToCoverLoss: Infinity
+        }))
+      };
+    }
+
+    const avgExpensePerDay = totalExpense / dailyCleanProfits.length;
+    const currentAverageIncome = totalIncome / dailyCleanProfits.length;
 
     const projections = lossProjectionRates.map(rate => {
       const increasedIncome = currentAverageIncome * (1 + rate);
-      const projectedDailyProfit = increasedIncome - (totalExpense / dailyCleanProfits.length || 1);
+      const projectedDailyProfit = increasedIncome - avgExpensePerDay;
 
       const estimatedDays = projectedDailyProfit > 0
         ? loss / projectedDailyProfit
