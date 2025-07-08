@@ -10,6 +10,8 @@ module.exports.initTopUp = async (req, res) => {
   const topupData = {
     balance: parseFloat(req.body.balance),
     pocket_id: req.body.pocket_id,
+    destination_acc : req.body.destination_acc,
+    description: req.body.description,
   }
 
   topupModules.initTopUp(userData.id, topupData)
@@ -28,6 +30,8 @@ module.exports.initWithdraw = async (req, res) => {
   const withdrawData = {
     balance: parseFloat(req.body.balance),
     pocket_id: req.body.pocket_id,
+    destination_acc : req.body.destination_acc,
+    description: req.body.description,
   }
 
   withdrawModules.initWithdraw(userData.id, withdrawData)
@@ -104,7 +108,7 @@ module.exports.initTransfer = async (req, res) => {
   const transferData = {
     balance: parseFloat(req.body.balance),
     pocket_id: req.body.pocket_id,
-    destination: req.body.destination,
+    destination_acc: req.body.destination_acc,
     description: req.body.description,
     category: req.body.category
   }

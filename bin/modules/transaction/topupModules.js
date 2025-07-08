@@ -94,12 +94,12 @@ module.exports.initTopUp = async (userId, topupData) => {
       initiator_user_id: userId,
       type: 'Income',
       amount: topupData.balance,
-      destination_acc: null,
-      category: `topup`,
+      destination_acc: topupData.destination_acc || pocket.name,
+      category: 'topup',
       status: 'completed',
-      description: null,
+      description: topupData.description || '',
       is_business_expense: false,
-    }
+    };
 
     const result = await Transaction.create(transactionData, { transaction: t });
 
@@ -117,7 +117,7 @@ module.exports.initTopUp = async (userId, topupData) => {
     } catch (error) {
       logger.warn('Failed to send notification');
     }
-    
+
     await t.commit();
 
     return result;

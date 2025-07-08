@@ -94,10 +94,10 @@ module.exports.initWithdraw = async (userId, withdrawData) => {
       initiator_user_id: userId,
       type: 'Expense',
       amount: withdrawData.balance,
-      destination_acc: `BNI - [NO REKENING]`,
+      destination_acc: withdrawData.destination_acc || user.name,
       category: 'withdraw',
       status: 'completed',
-      description: null,
+      description: withdrawData.description || '',
       is_business_expense: false,
     }
 

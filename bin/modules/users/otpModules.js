@@ -21,7 +21,7 @@ module.exports.requestOtp = async (reqOtpData) => {
     });
 
     if (!userData) {
-      throw new NotFoundError('User not found');
+      throw new NotFoundError('Wrong phone number / password');
     };
 
     const isMatch = await bcrypt.compare(reqOtpData.password, userData.password);
@@ -44,7 +44,7 @@ module.exports.requestOtp = async (reqOtpData) => {
     mongoDb.setCollection('usersToken');
     const pushEntry = await mongoDb.findOne({ userId: Number(user.id) });
     if (!pushEntry.data?.expoPushToken) {
-      throw new ConflictError('No push token registered')
+      throw new ConflictError('Silahkan login di perangkat mobile terlebih dahulu')
     }
 
     const notifData = {
